@@ -1,0 +1,52 @@
+#######################################
+# Syntax Coloring Map for DMXSerial2
+#######################################
+
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+RDMDATA	KEYWORD1
+DMXMode	KEYWORD1
+boolean	KEYWORD1
+byte	KEYWORD1
+uint16_t	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+
+init	KEYWORD2
+initRDM	KEYWORD2
+maxChannel	KEYWORD2
+read	KEYWORD2
+readRelative	KEYWORD2
+write	KEYWORD2
+noDataSince	KEYWORD2
+getStartAddress	KEYWORD2
+isIdentifyMode	KEYWORD2
+getStartAddress	KEYWORD2
+getFootprint	KEYWORD2
+attachRDMCallback	KEYWORD2
+tick	KEYWORD2
+term	KEYWORD2
+deviceLabel	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+DMXSerial2	KEYWORD2
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+DMXNone	LITERAL1
+DMXError	LITERAL1
+DMXController	LITERAL1
+DMXReceiver	LITERAL1
+RDMDeviceMode	LITERAL1
