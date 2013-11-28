@@ -23,10 +23,6 @@
 
 #define DMXSERIAL_MAX 512 // max. number of supported DMX data channels
 
-#define DmxModePin 2     // Arduino pin 2 for controlling the data direction
-#define DmxModeOut HIGH  // set the level to HIGH for outgoing data direction
-#define DmxModeIn  LOW   // set the level to LOW  for incomming data direction
-
 // ----- Enumerations -----
 
 // ----- Types -----
@@ -103,7 +99,7 @@ class DMXSerialClass2
 {
   public:
     // Initialize for RDM mode.
-    void    init (struct RDMINIT *initData, RDMCallbackFunction func);
+    void    init (struct RDMINIT *initData, RDMCallbackFunction func, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1);
     
     // Read the last known value of a channel.
     uint8_t read       (int channel);
