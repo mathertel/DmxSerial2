@@ -281,6 +281,9 @@ uint16_t _rdmCheckSum;
 // static data that is not needed externally so it is not put into the class definition.
 boolean _isMute;    // is set to true when RDM discovery command muted this device.
 
+uint8_t _dmxModePin = 2;
+uint8_t _dmxModeOut = HIGH;
+uint8_t _dmxModeIn = LOW;
 
 // ----- Macros -----
 
@@ -323,7 +326,7 @@ int random255();
 
 // Initialize or reinitialize the DMX RDM mode.
 // The other values are stored for later use with the specific commands.
-void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func)
+void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, uint8_t modePin, uint8_t modeIn, uint8_t modeOut)
 {
   // This structure is defined for mapping the values in the EEPROM
   struct EEPROMVALUES eeprom;
@@ -331,6 +334,10 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func)
   // save the given initData for later use.
   _initData = initData;
   _rdmFunc = func;
+
+  _dmxModePin = modePin;
+  _dmxModeIn = modeIn;
+  _dmxModeOut = modeOut;
 
   _baseInit();
 
@@ -361,7 +368,7 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func)
   _saveEEPRom();
 
   // now start
-  digitalWrite(DmxModePin, DmxModeIn); // data in direction
+  digitalWrite(_dmxModePin, _dmxModeIn); // data in direction
 
   _dmxSendBuffer = _rdm.buffer;
   // _dmxSendLen = ... will be set individually
@@ -490,7 +497,7 @@ void DMXSerialClass2::tick(void)
               UCSRnB = (1<<TXENn); // no interrupts !
               
               // delayMicroseconds(50);  // ??? 180
-              digitalWrite(DmxModePin, DmxModeOut); // data Out direction
+              digitalWrite(_dmxModePin, _dmxModeOut); // data Out direction
 
               unsigned int _rdmBufferLen = sizeof(_rdm.discovery);
               for (unsigned int i = 0; i < _rdmBufferLen; i++) {
@@ -499,7 +506,7 @@ void DMXSerialClass2::tick(void)
                 loop_until_bit_is_set(UCSRnA, TXCn);
               } // for
             
-              digitalWrite(DmxModePin, DmxModeIn); // data Out direction
+              digitalWrite(_dmxModePin, _dmxModeIn); // data Out direction
             
               // Re-enable receiver and Receive interrupt
               _dmxState= IDLE; // initial state
@@ -669,7 +676,7 @@ void DMXSerialClass2::_baseInit() {
   for (int n = 0; n < DMXSERIAL_MAX+1; n++)
     _dmxData[n] = 0;
     
-  pinMode(DmxModePin, OUTPUT); // enables pin 2 for output to control data direction
+  pinMode(_dmxModePin, OUTPUT); // enables pin 2 for output to control data direction
 } // _baseInit
 
 
@@ -863,7 +870,7 @@ void respondMessage(boolean isHandled)
     delayMicroseconds(190 - d);
 
   // send package by starting with a BREAK
-  digitalWrite(DmxModePin, DmxModeOut); // data Out direction
+  digitalWrite(_dmxModePin, _dmxModeOut); // data Out direction
   UCSRnB = (1<<TXENn); // send without no interrupts !
 
   _DMXSerialBaud(Calcprescale(BREAKSPEED), BREAKFORMAT);
@@ -891,7 +898,7 @@ void respondMessage(boolean isHandled)
   UCSRnA= (1<<TXCn);
   loop_until_bit_is_set(UCSRnA, TXCn);
 
-  digitalWrite(DmxModePin, DmxModeIn); // switch back to data In direction
+  digitalWrite(_dmxModePin, _dmxModeIn); // switch back to data In direction
 
   // Re-enable receiver and Receive interrupt
   _dmxState= IDLE; // initial state
