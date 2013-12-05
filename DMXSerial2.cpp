@@ -31,6 +31,9 @@
 // 01.09.2013 implemented all minimal required RDM parameters (+SOFTWARE_VERSION_LABEL, +SUPPORTED_PARAMETERS)
 // 06.09.2013 simplifications, removing pure DMX mode code and memory optimizations.
 // 21.11.2013 response to E120_DISC_MUTE and E120_DISC_UN_MUTE messages as required by the spec.
+// 03.12.2013 Code merged from raumzeitlabor
+// 04.12.2013 Allow manufacturer broadcasts
+// 05.12.2013 FIX: response only to direct commands as required by the spec.
 
 // - - - - -
 
@@ -254,7 +257,10 @@ struct EEPROMVALUES {
 // and adjust the next line to use it:
 byte _devID[6] = { 0x09, 0x87, 0x20, 0x12, 0x00, 0x00 };
 
-// The Device ID for adressein all devices: 6 times 0xFF.
+// The Device ID for adressing all devices of a manufacturer.
+byte _devIDGroup[6] = { 0x09, 0x87, 0xFF, 0xFF, 0xFF, 0xFF };
+
+// The Device ID for adressing all devices: 6 times 0xFF.
 byte _devIDAll[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
 
@@ -358,6 +364,10 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, u
     for (int i = 0; i < 6; i++)
       _devID[i] = eeprom.deviceID[i];
 
+    // setup the manufacturer adressing device-ID
+    _devIDGroup[0] = _devID[0];
+    _devIDGroup[1] = _devID[1];
+    
   } else {
     // set default values
     _startAddress = 1;
@@ -445,6 +455,7 @@ void DMXSerialClass2::tick(void)
 
     // respond to RDM commands now.
     boolean packetIsForMe = false;
+    boolean packetIsForGroup = false;
     boolean packetIsForAll = false;
     boolean isHandled = false;
 
@@ -456,14 +467,16 @@ void DMXSerialClass2::tick(void)
     // in the ISR only some global conditions are checked: DestID
     if (DeviceIDCmp(rdm->DestID, _devIDAll) == 0) {
       packetIsForAll = true;
+    } else if (DeviceIDCmp(rdm->DestID, _devIDGroup) == 0) {
+      packetIsForGroup = true;
     } else if (DeviceIDCmp(rdm->DestID, _devID) == 0) {
       packetIsForMe = true;
     } // if
 
-      if ((! packetIsForMe) && (! packetIsForAll)) {
+      if ((! packetIsForMe) && (! packetIsForGroup) && (! packetIsForAll)) {
         // ignore this packet
 
-      } else if (CmdClass == E120_DISCOVERY_COMMAND) {// 0x10
+      } else if (CmdClass == E120_DISCOVERY_COMMAND) { // 0x10
         // handle all Discovery commands locally 
         if (Parameter == SWAPINT(E120_DISC_UNIQUE_BRANCH)) { // 0x0001
           // not tested here for pgm space reasons: rdm->Length must be 24+6+6 = 36
@@ -518,18 +531,21 @@ void DMXSerialClass2::tick(void)
         } else if (Parameter == SWAPINT(E120_DISC_UN_MUTE)) { // 0x0003
           _isMute = false;
           isHandled = true;
-          respondMessage(true); // 21.11.2013
+          if (packetIsForMe) // 05.12.2013
+            respondMessage(true); // 21.11.2013
           
         } else if (Parameter == SWAPINT(E120_DISC_MUTE)) { // 0x0002
           _isMute = true;
           isHandled = true;
-          respondMessage(true); // 21.11.2013
+          if (packetIsForMe) // 05.12.2013
+            respondMessage(true); // 21.11.2013
 
         } // if
 
-      } else if (packetIsForMe) {
-        // ignore packets not sent directly but via broadcasts. This might no be correct, but I guess is so.
-        DMXSerial2._processRDMMessage(CmdClass, Parameter, isHandled);
+      } else {
+        // don't ignore packets not sent directly but via broadcasts.
+        // Only send an answer on directly sent packages.
+        DMXSerial2._processRDMMessage(CmdClass, Parameter, isHandled, packetIsForMe);
 
       } // if
   } // if
@@ -548,8 +564,9 @@ void DMXSerialClass2::term(void)
 // if returning (false) a NAK will be sent.
 // This method processes the commands/parameters regarding mute, DEviceInfo, devicelabel,
 // manufacturer label, DMX Start address.
-// When parameters are chenged by a SET command they are persisted into EEPROM. 
-void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, boolean handled)
+// When parameters are chenged by a SET command they are persisted into EEPROM.
+// When doRespond is true, send an answer back to the controller node.
+void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, boolean handled, boolean doRespond)
 {
   // call the device specific method
   if ((! handled) && (_rdmFunc)) {
@@ -659,7 +676,8 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
     }  // if
   }  // if
 
-  respondMessage(handled);
+  if (doRespond)
+    respondMessage(handled);
 } // _processRDMMessage
 
 
