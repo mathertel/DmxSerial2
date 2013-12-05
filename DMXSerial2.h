@@ -138,14 +138,13 @@ class DMXSerialClass2
 
     // don't use that method from extern.
     void _processRDMMessage(byte CmdClass, uint16_t Parameter, boolean isHandled);
-  
+
+    // save all data to EEPROM
+	void _saveEEPRom();
   private:
     // common internal initialization function.
     void _baseInit();
 
-    // save all data to EEPROM
-    void _saveEEPRom();
-    
     // callback function to device specific code
     RDMCallbackFunction _rdmFunc;
 
