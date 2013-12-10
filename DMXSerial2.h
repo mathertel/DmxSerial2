@@ -142,6 +142,9 @@ class DMXSerialClass2
     // save all data to EEPROM
 	void _saveEEPRom();
   private:
+    // process a relevant message
+    void _processRDMMessage(byte CmdClass, uint16_t Parameter, boolean isHandled, boolean doRespond);
+  
     // common internal initialization function.
     void _baseInit();
 
