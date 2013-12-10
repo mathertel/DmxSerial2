@@ -622,6 +622,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
       if (CmdClass == E120_SET_COMMAND) {  
         memcpy(deviceLabel, _rdm.packet.Data, _rdm.packet.DataLength);
         deviceLabel[_rdm.packet.DataLength] = '\0';
+        _rdm.packet.DataLength = 0;
         // persist in EEPROM
         _saveEEPRom();
       } else if (CmdClass == E120_GET_COMMAND) {
