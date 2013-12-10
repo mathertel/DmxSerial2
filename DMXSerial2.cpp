@@ -622,9 +622,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
       if (CmdClass == E120_SET_COMMAND) {  
         memcpy(deviceLabel, _rdm.packet.Data, _rdm.packet.DataLength);
         deviceLabel[_rdm.packet.DataLength] = '\0';
+        _rdm.packet.DataLength = 0;
         // persist in EEPROM
         _saveEEPRom();
-
       } else if (CmdClass == E120_GET_COMMAND) {
         _rdm.packet.DataLength = strlen(deviceLabel);
         memcpy(_rdm.packet.Data, deviceLabel, _rdm.packet.DataLength);
@@ -888,10 +888,10 @@ void respondMessage(boolean isHandled)
     delayMicroseconds(190 - d);
 
   // send package by starting with a BREAK
-  digitalWrite(_dmxModePin, _dmxModeOut); // data Out direction
   UCSRnB = (1<<TXENn); // send without no interrupts !
 
   _DMXSerialBaud(Calcprescale(BREAKSPEED), BREAKFORMAT);
+  digitalWrite(_dmxModePin, _dmxModeOut); // data Out direction
   UDRn = 0;
   UCSRnA= (1<<TXCn);
   loop_until_bit_is_set(UCSRnA, TXCn);

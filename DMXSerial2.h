@@ -136,6 +136,11 @@ class DMXSerialClass2
     // A short custom label given to the device. 
     char deviceLabel[32];
 
+    // don't use that method from extern.
+    void _processRDMMessage(byte CmdClass, uint16_t Parameter, boolean isHandled);
+
+    // save all data to EEPROM
+	void _saveEEPRom();
   private:
     // process a relevant message
     void _processRDMMessage(byte CmdClass, uint16_t Parameter, boolean isHandled, boolean doRespond);
@@ -143,9 +148,6 @@ class DMXSerialClass2
     // common internal initialization function.
     void _baseInit();
 
-    // save all data to EEPROM
-    void _saveEEPRom();
-    
     // callback function to device specific code
     RDMCallbackFunction _rdmFunc;
 
