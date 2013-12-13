@@ -640,11 +640,13 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
     } else if (Parameter == SWAPINT(E120_DMX_START_ADDRESS)) { // 0x00F0
       if (CmdClass == E120_SET_COMMAND) {
         _startAddress = READINT(_rdm.packet.Data);
+        _rdm.packet.DataLength = 0;
         // persist in EEPROM
         _saveEEPRom();
         
       } else if (CmdClass == E120_GET_COMMAND) {
         WRITEINT(_rdm.packet.Data, _startAddress);
+        _rdm.packet.DataLength = 2;
       } // if
       handled = true;
 
