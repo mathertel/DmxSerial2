@@ -400,6 +400,12 @@ uint8_t DMXSerialClass2::read(int channel)
   return(_dmxData[channel]);
 } // read()
 
+void DMXSerialClass2::getDeviceUID (byte *uid) {
+	for (int i = 0; i < 6; i++)
+	{
+		uid[i] = _devID[i];
+	}
+}
 
 // Read the current value of a channel, relative to the startAddress.
 uint8_t DMXSerialClass2::readRelative(unsigned int channel)
