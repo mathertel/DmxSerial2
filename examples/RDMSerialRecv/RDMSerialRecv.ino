@@ -23,10 +23,15 @@
 // 22.01.2013 first published version to support RDM
 // 03.03.2013 Using DMXSerial2 as a library
 // 15.05.2013 Arduino Leonard and Arduino MEGA compatibility
+// 15.12.2013 ADD: output information on a LEONARDO board by using the #define SERIAL_DEBUG definition
+//            If you have to save pgm space you can delete the inner lines of this "#if" blocks
 // - - - - -
 
 #include <EEPROM.h>
 #include <DMXSerial2.h>
+
+// uncomment this line for enabling information on a LEONARD board. 
+// #define SERIAL_DEBUG
 
 // Constants for demo program
 
@@ -57,22 +62,25 @@ struct RDMINIT rdmInit = {
 
 
 void setup () {
+
+#if defined(SERIAL_DEBUG)
   // The Serial port can be used on Arduino Leonard Boards for debugging purpose
   // because it is not mapped to the real serial port of the ATmega32U4 chip but to the USB port.
   // Dont't use that on Arduino Uno, 2009,... boards based on ATmega328 or ATmega168 chips.
-/*
   Serial.begin(9600);       
   while (!Serial) ;
   Serial.println("starting...");
-*/
+#endif
 
   // initialize the Serial interface to be used as an RDM Device Node.
   // There are several constants that have to be passed to the library so it can reposonse to the
   // corresponding commands for itself.
-  
   DMXSerial2.init(&rdmInit, processCommand);
 
   uint16_t start = DMXSerial2.getStartAddress();
+#if defined(SERIAL_DEBUG)
+  Serial.print("Listening on DMX address #"); Serial.println(start);
+#endif
 
   // set default values to dark red
   // this color will be shown when no signal is present for the first 5 seconds.
@@ -85,7 +93,22 @@ void setup () {
   pinMode(GreenPin, OUTPUT);
   pinMode(BluePin,  OUTPUT);
 
-  // Serial.print("Listening on DMX address #"); Serial.println(start);
+#if defined(SERIAL_DEBUG)
+  // output the current DeviceID
+
+  DEVICEID thisDevice;
+  DMXSerial2.getDeviceID(thisDevice);
+
+  Serial.print("This Device is: ");
+  if (thisDevice[0] < 0x10) Serial.print('0'); Serial.print(thisDevice[0], HEX);
+  if (thisDevice[1] < 0x10) Serial.print('0'); Serial.print(thisDevice[1], HEX);
+  Serial.print(":");
+  if (thisDevice[2] < 0x10) Serial.print('0'); Serial.print(thisDevice[2], HEX);
+  if (thisDevice[3] < 0x10) Serial.print('0'); Serial.print(thisDevice[3], HEX);
+  if (thisDevice[4] < 0x10) Serial.print('0'); Serial.print(thisDevice[4], HEX);
+  if (thisDevice[5] < 0x10) Serial.print('0'); Serial.print(thisDevice[5], HEX); 
+  Serial.println();
+#endif
 
 } // setup()
 
@@ -111,6 +134,9 @@ void loop() {
     analogWrite(BluePin,  DMXSerial2.readRelative(2));
 
   } else {
+#if defined(SERIAL_DEBUG)
+  Serial.println("no signal since 30 secs.");
+#endif
     // Show default color, when no data was received since 30 seconds or more.
     analogWrite(RedPin,   RedDefaultLevel);
     analogWrite(GreenPin, GreenDefaultLevel);
