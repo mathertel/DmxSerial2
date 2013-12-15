@@ -30,6 +30,12 @@
 typedef uint8_t boolean;
 typedef uint8_t byte;
 
+
+// This is the definition for a unique DEVICE ID.
+// DEVICEID[0..1] ESTA Manufacturer ID
+// DEVICEID[2..5] unique number
+typedef byte DEVICEID[6];
+
 // ----- structures -----
 
 // The RDMDATA structure (length = 24+data) is used by all GET/SET RDM commands.
@@ -118,8 +124,8 @@ class DMXSerialClass2
     // Return true when identify mode was set on by controller.
     boolean isIdentifyMode();
 
-    // Returns the unformatted Device UID. Copies the UID to the uid argument.
-    void getDeviceUID( byte *uid);
+    // Returns the Device ID. Copies the UID to the buffer passed through the uid argument.
+    void getDeviceID(DEVICEID id);
 
     // Return the current DMX start address that is the first dmx address used by the device.
     uint16_t getStartAddress();

@@ -34,6 +34,8 @@
 // 03.12.2013 Code merged from raumzeitlabor
 // 04.12.2013 Allow manufacturer broadcasts
 // 05.12.2013 FIX: response only to direct commands as required by the spec.
+// 13.12.2013 ADD: getDeviceID() function added
+// 15.12.2013 introducing the type DEVICEID and copy by using memcpy to save pgm space.
 
 // - - - - -
 
@@ -233,7 +235,7 @@ struct EEPROMVALUES {
   byte sig2; // 0x68  signature 2
   uint16_t startAddress; // the DMX start address can be changed by a RDM command.
   char deviceLabel[32]; // the device Label can be changed by a RDM command.
-  byte deviceID[6];      // store the device ID to allow easy software updates.
+  DEVICEID deviceID;    // store the device ID to allow easy software updates.
 }; // struct EEPROMVALUES
 
 
@@ -255,13 +257,13 @@ struct EEPROMVALUES {
 // If no valid EEPROM parameter block was found the following device ID is used and the last 2 bytes are randomized.
 // If you plan for more please requets your own manufacturer id
 // and adjust the next line to use it:
-byte _devID[6] = { 0x09, 0x87, 0x20, 0x12, 0x00, 0x00 };
+DEVICEID _devID = { 0x09, 0x87, 0x20, 0x12, 0x00, 0x00 };
 
 // The Device ID for adressing all devices of a manufacturer.
-byte _devIDGroup[6] = { 0x09, 0x87, 0xFF, 0xFF, 0xFF, 0xFF };
+DEVICEID _devIDGroup = { 0x09, 0x87, 0xFF, 0xFF, 0xFF, 0xFF };
 
 // The Device ID for adressing all devices: 6 times 0xFF.
-byte _devIDAll[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+DEVICEID _devIDAll = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
 
 // This is the buffer for RDM packets beeing received and sent.
@@ -298,7 +300,10 @@ uint8_t _dmxModeIn = LOW;
 #define Calcprescale(B)     ( ( (((F_CPU)/8)/(B)) - 1 ) / 2 )
 
 // compare 2 DeviceIDs
-#define DeviceIDCmp(id1, id2) memcmp(id1, id2, 6)
+#define DeviceIDCmp(id1, id2) memcmp(id1, id2, sizeof(DEVICEID))
+
+// copy an DeviceID id2 to id1
+#define DeviceIDCpy(id1, id2) memcpy(id1, id2, sizeof(DEVICEID))
 
 
 // ----- DMXSerial Private variables -----
@@ -361,8 +366,7 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, u
   if ((eeprom.sig1 == 0x6D) && (eeprom.sig2 == 0x68)) {
     _startAddress = eeprom.startAddress;
     strcpy (deviceLabel, eeprom.deviceLabel);
-    for (int i = 0; i < 6; i++)
-      _devID[i] = eeprom.deviceID[i];
+    DeviceIDCpy(_devID, eeprom.deviceID);
 
     // setup the manufacturer adressing device-ID
     _devIDGroup[0] = _devID[0];
@@ -400,12 +404,12 @@ uint8_t DMXSerialClass2::read(int channel)
   return(_dmxData[channel]);
 } // read()
 
-void DMXSerialClass2::getDeviceUID (byte *uid) {
-	for (int i = 0; i < 6; i++)
-	{
-		uid[i] = _devID[i];
-	}
-}
+
+// get the deviceID 
+void DMXSerialClass2::getDeviceID (DEVICEID id) {
+  DeviceIDCpy(id, _devID);
+} // getDeviceID()
+
 
 // Read the current value of a channel, relative to the startAddress.
 uint8_t DMXSerialClass2::readRelative(unsigned int channel)
@@ -720,8 +724,7 @@ void DMXSerialClass2::_saveEEPRom()
   eeprom.sig2 = 0x68;
   eeprom.startAddress = _startAddress;
   strcpy (eeprom.deviceLabel, deviceLabel);
-  for (int i = 0; i < 6; i++)
-    eeprom.deviceID[i] = _devID[i];
+  DeviceIDCpy(eeprom.deviceID, _devID);
 
   for (unsigned int i = 0; i < sizeof(eeprom); i++) {
     if (((byte *)(&eeprom))[i] != EEPROM.read(i))
@@ -878,8 +881,8 @@ void respondMessage(boolean isHandled)
   } // if
   
   // swap SrcID into DestID for sending back.
-  memcpy(_rdm.packet.DestID, _rdm.packet.SourceID, 6);
-  memcpy(_rdm.packet.SourceID, _devID, 6);
+  DeviceIDCpy(_rdm.packet.DestID, _rdm.packet.SourceID);
+  DeviceIDCpy(_rdm.packet.SourceID, _devID);
 
   _rdm.packet.CmdClass++;
   // Parameter
