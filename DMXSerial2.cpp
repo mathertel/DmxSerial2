@@ -590,46 +590,71 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
   if (! handled ) {
 
     if (Parameter == SWAPINT(E120_IDENTIFY_DEVICE)) { // 0x1000
-      if (CmdClass == E120_SET_COMMAND) { // 0x30  
-        _identifyMode = _rdm.packet.Data[0] != 0;
-        _rdm.packet.DataLength = 0;
-
-      } else if (CmdClass == E120_GET_COMMAND) { // 0x20  
-        _rdm.packet.Data[0] = _identifyMode;
-        _rdm.packet.DataLength = 1;
+      if (CmdClass == E120_SET_COMMAND) { // 0x30
+        if (_rdm.packet.DataLength != 1) {
+          // Oversized data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else {
+          _identifyMode = _rdm.packet.Data[0] != 0;
+          _rdm.packet.DataLength = 0;
+          handled = true;
+        }
+      } else if (CmdClass == E120_GET_COMMAND) { // 0x20
+        if (_rdm.packet.DataLength > 0) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else {
+          _rdm.packet.Data[0] = _identifyMode;
+          _rdm.packet.DataLength = 1;
+          handled = true;
+        }
       } // if
-      handled = true;
 
     } else if ((CmdClass == E120_GET_COMMAND) && (Parameter == SWAPINT(E120_DEVICE_INFO))) { // 0x0060
-      // return all device info data 
-      DEVICEINFO *devInfo = (DEVICEINFO *)(_rdm.packet.Data); // The data has to be responsed in the Data buffer.
+      if (_rdm.packet.DataLength > 0) {
+        // Unexpected data
+        nackReason = E120_NR_FORMAT_ERROR;
+      } else {
+        // return all device info data 
+        DEVICEINFO *devInfo = (DEVICEINFO *)(_rdm.packet.Data); // The data has to be responsed in the Data buffer.
 
-      devInfo->protocolMajor = 1;
-      devInfo->protocolMinor = 0;
-      devInfo->deviceModel = SWAPINT(1);
-      devInfo->productCategory = SWAPINT(E120_PRODUCT_CATEGORY_DIMMER_CS_LED);
-      devInfo->softwareVersion = SWAPINT32(0x01000000);// 0x04020900;
-      devInfo->footprint = SWAPINT(_initData->footprint);
-      devInfo->currentPersonality = 1;
-      devInfo->personalityCount = 1;
-      devInfo->startAddress = SWAPINT(_startAddress);
-      devInfo->subDeviceCount = 0;
-      devInfo->sensorCount = 0;
+        devInfo->protocolMajor = 1;
+        devInfo->protocolMinor = 0;
+        devInfo->deviceModel = SWAPINT(1);
+        devInfo->productCategory = SWAPINT(E120_PRODUCT_CATEGORY_DIMMER_CS_LED);
+        devInfo->softwareVersion = SWAPINT32(0x01000000);// 0x04020900;
+        devInfo->footprint = SWAPINT(_initData->footprint);
+        devInfo->currentPersonality = 1;
+        devInfo->personalityCount = 1;
+        devInfo->startAddress = SWAPINT(_startAddress);
+        devInfo->subDeviceCount = 0;
+        devInfo->sensorCount = 0;
 
-      _rdm.packet.DataLength = sizeof(DEVICEINFO);
-      handled = true;
+         _rdm.packet.DataLength = sizeof(DEVICEINFO);
+        handled = true;
+      }
 
     } else if ((CmdClass == E120_GET_COMMAND) && (Parameter == SWAPINT(E120_MANUFACTURER_LABEL))) { // 0x0081
-      // return the manufactorer label
-      _rdm.packet.DataLength = strlen(_initData->manufacturerLabel);
-      memcpy(_rdm.packet.Data, _initData->manufacturerLabel, _rdm.packet.DataLength);
-      handled = true;
+      if (_rdm.packet.DataLength > 0) {
+        // Unexpected data
+        nackReason = E120_NR_FORMAT_ERROR;
+      } else {
+        // return the manufacturer label
+        _rdm.packet.DataLength = strlen(_initData->manufacturerLabel);
+        memcpy(_rdm.packet.Data, _initData->manufacturerLabel, _rdm.packet.DataLength);
+        handled = true;
+      }
 
     } else if ((CmdClass == E120_GET_COMMAND) && (Parameter == SWAPINT(E120_DEVICE_MODEL_DESCRIPTION))) { // 0x0080
-      // return the DEVICE MODEL DESCRIPTION
-      _rdm.packet.DataLength = strlen(_initData->deviceModel);
-      memcpy(_rdm.packet.Data, _initData->deviceModel, _rdm.packet.DataLength);
-      handled = true;
+      if (_rdm.packet.DataLength > 0) {
+        // Unexpected data
+        nackReason = E120_NR_FORMAT_ERROR;
+      } else {
+        // return the DEVICE MODEL DESCRIPTION
+        _rdm.packet.DataLength = strlen(_initData->deviceModel);
+        memcpy(_rdm.packet.Data, _initData->deviceModel, _rdm.packet.DataLength);
+        handled = true;
+      }
 
     } else if (Parameter == SWAPINT(E120_DEVICE_LABEL)) { // 0x0082
       if (CmdClass == E120_SET_COMMAND) {
@@ -645,20 +670,30 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           handled = true;
         }
       } else if (CmdClass == E120_GET_COMMAND) {
-        _rdm.packet.DataLength = strlen(deviceLabel);
-        memcpy(_rdm.packet.Data, deviceLabel, _rdm.packet.DataLength);
-        handled = true;
+        if (_rdm.packet.DataLength > 0) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else {
+          _rdm.packet.DataLength = strlen(deviceLabel);
+          memcpy(_rdm.packet.Data, deviceLabel, _rdm.packet.DataLength);
+          handled = true;
+        }
       } // if
 
     } else if ((CmdClass == E120_GET_COMMAND) && (Parameter == SWAPINT(E120_SOFTWARE_VERSION_LABEL))) { // 0x00C0
-      // return the SOFTWARE_VERSION_LABEL
-      _rdm.packet.DataLength = strlen(_softwareLabel);
-      memcpy(_rdm.packet.Data, _softwareLabel, _rdm.packet.DataLength);
-      handled = true;
+      if (_rdm.packet.DataLength > 0) {
+        // Unexpected data
+        nackReason = E120_NR_FORMAT_ERROR;
+      } else {
+        // return the SOFTWARE_VERSION_LABEL
+        _rdm.packet.DataLength = strlen(_softwareLabel);
+        memcpy(_rdm.packet.Data, _softwareLabel, _rdm.packet.DataLength);
+        handled = true;
+      }
 
     } else if (Parameter == SWAPINT(E120_DMX_START_ADDRESS)) { // 0x00F0
       if (CmdClass == E120_SET_COMMAND) {
-        if (_rdm.packet.DataLength > 2) {
+        if (_rdm.packet.DataLength != 2) {
           // Oversized data
           nackReason = E120_NR_FORMAT_ERROR;
         } else {
@@ -676,9 +711,14 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           }
         }
       } else if (CmdClass == E120_GET_COMMAND) {
-        WRITEINT(_rdm.packet.Data, _startAddress);
-        _rdm.packet.DataLength = 2;
-        handled = true;
+        if (_rdm.packet.DataLength > 0) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else {
+          WRITEINT(_rdm.packet.Data, _startAddress);
+          _rdm.packet.DataLength = 2;
+          handled = true;
+        }
       } // if
 
     } else if (Parameter == SWAPINT(E120_SUPPORTED_PARAMETERS)) { // 0x0050
