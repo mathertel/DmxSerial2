@@ -23,6 +23,12 @@
 
 #define DMXSERIAL_MAX 512 // max. number of supported DMX data channels
 
+#define DMXSERIAL_MIN_SLOT_VALUE 0 // min. value a DMX512 slot can take
+
+#define DMXSERIAL_MAX_SLOT_VALUE 255 // max. value a DMX512 slot can take
+
+#define DMXSERIAL_MAX_RDM_STRING_LENGTH 32 // max. length of a string in RDM
+
 // ----- Enumerations -----
 
 // ----- Types -----
@@ -60,11 +66,13 @@ struct RDMDATA {
 
 // ----- macros -----
 
-// 16-bit integers in the RDM protocol are transmitted highbyte - lowbyte.
-// but the ATMEGA processors store 16-bit data in highbyte - lowbyte order.
+// 16-bit and 32-bit integers in the RDM protocol are transmitted highbyte - lowbyte.
+// but the ATMEGA processors store them in highbyte - lowbyte order.
 // Use SWAPINT to swap the 2 bytes of an 16-bit int to match the byte order on the DMX Protocol.
 // avoid using this macro on variables but use it on the constant definitions.
 #define SWAPINT(i) (((i&0x00FF)<<8) | ((i&0xFF00)>>8))
+// Use SWAPINT32 to swap the 4 bytes of a 32-bit int to match the byte order on the DMX Protocol.
+#define SWAPINT32(i) ((i&0x000000ff)<<24) | ((i&0x0000ff00)<<8) | ((i&0x00ff0000)>>8) | ((i&0xff000000)>>24)
 
 // read a 16 bit number from a data buffer location
 #define READINT(p) ((p[0]<<8) | (p[1]))
@@ -143,7 +151,7 @@ class DMXSerialClass2
     void    term(void);
     
     // A short custom label given to the device. 
-    char deviceLabel[32];
+    char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH];
 
     // don't use that method from extern.
     void _processRDMMessage(byte CmdClass, uint16_t Parameter, boolean isHandled);
