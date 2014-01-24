@@ -38,6 +38,8 @@
 // 15.12.2013 introducing the type DEVICEID and copy by using memcpy to save pgm space.
 // 12.01.2014 Peter Newman: make the responder more compliant with the OLA RDM Tests
 // 24.01.2014 Peter Newman: More compliance with the OLA RDM Tests around sub devices and mute messages
+// 24.01.2014 Peter Newman/Sean Sill: Get device specific PIDs returning properly in supportedParameters
+// 24.01.2014 Peter Newman: Make the device specific PIDs compliant with the OLA RDM Tests. Add device model ID option
 
 // - - - - -
 
@@ -604,7 +606,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
 
   // call the device specific method
   if ((! handled) && (_rdmFunc)) {
-    handled = _rdmFunc(&_rdm.packet);
+    handled = _rdmFunc(&_rdm.packet, &nackReason);
   } // if
   
   // if not already handled the command: handle it using this implementation
@@ -650,7 +652,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
 
         devInfo->protocolMajor = 1;
         devInfo->protocolMinor = 0;
-        devInfo->deviceModel = SWAPINT(1);
+        devInfo->deviceModel = SWAPINT(_initData->deviceModelId);
         devInfo->productCategory = SWAPINT(E120_PRODUCT_CATEGORY_DIMMER_CS_LED);
         devInfo->softwareVersion = SWAPINT32(0x01000000);// 0x04020900;
         devInfo->footprint = SWAPINT(_initData->footprint);
@@ -788,7 +790,6 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           WRITEINT(_rdm.packet.Data   , E120_MANUFACTURER_LABEL);
           WRITEINT(_rdm.packet.Data+ 2, E120_DEVICE_MODEL_DESCRIPTION);
           WRITEINT(_rdm.packet.Data+ 4, E120_DEVICE_LABEL);
-          // TODO: Fixme, the below doesn't give the correct values from SUPPORTED_PARAMETERS
           for (int n = 0; n < _initData->additionalCommandsLength; n++) {
             WRITEINT(_rdm.packet.Data+6+n+n, _initData->additionalCommands[n]);
           }

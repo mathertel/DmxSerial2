@@ -83,7 +83,7 @@ struct RDMDATA {
 // ----- Callback function types -----
 
 extern "C" {
-  typedef boolean (*RDMCallbackFunction)(struct RDMDATA *buffer);
+  typedef boolean (*RDMCallbackFunction)(struct RDMDATA *buffer, uint16_t *nackReason);
 }
 
 // ----- Library Class -----
@@ -99,12 +99,13 @@ struct RDMPERSONALITY {
 
 struct RDMINIT {
   char          *manufacturerLabel; //
+  const uint16_t          deviceModelId;       //
   char          *deviceModel;       //
   uint16_t footprint;
   // uint16_t personalityCount;
   // RDMPERSONALITY *personalities;
-  uint16_t        additionalCommandsLength;
-  uint16_t       *additionalCommands;
+  const uint16_t        additionalCommandsLength;
+  const uint16_t       *additionalCommands;
 }; // struct RDMINIT
 
 
