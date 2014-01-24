@@ -45,7 +45,7 @@ typedef byte DEVICEID[6];
 // ----- structures -----
 
 // The RDMDATA structure (length = 24+data) is used by all GET/SET RDM commands.
-// The maximum data length I found through my searches was 32. I give 2 extra bytes for security reason.
+// The maximum permitted data length according to the spec is 231 bytes.
 struct RDMDATA {
   byte     StartCode;    // Start Code 0xCC for RDM
   byte     SubStartCode; // Start Code 0x01 for RDM
@@ -56,11 +56,11 @@ struct RDMDATA {
   byte     _TransNo;     // transaction number, not checked
   byte     ResponseType;    // ResponseType
   byte     _unknown;     // I don't know, ignore this
-  uint16_t _SubDev;      // sub device number (root = 0) 
+  uint16_t SubDev;      // sub device number (root = 0) 
   byte     CmdClass;     // command class
   uint16_t Parameter;	   // parameter ID
   byte     DataLength;   // parameter data length in bytes
-  byte     Data[32+2];   // data byte field
+  byte     Data[231];   // data byte field
 }; // struct RDMDATA
 
 
