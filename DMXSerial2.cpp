@@ -37,6 +37,9 @@
 // 13.12.2013 ADD: getDeviceID() function added
 // 15.12.2013 introducing the type DEVICEID and copy by using memcpy to save pgm space.
 // 12.01.2014 Peter Newman: make the responder more compliant with the OLA RDM Tests
+// 24.01.2014 Peter Newman: More compliance with the OLA RDM Tests around sub devices and mute messages
+// 24.01.2014 Peter Newman/Sean Sill: Get device specific PIDs returning properly in supportedParameters
+// 24.01.2014 Peter Newman: Make the device specific PIDs compliant with the OLA RDM Tests. Add device model ID option
 
 // - - - - -
 
@@ -51,8 +54,8 @@
 // to debug on an oscilloscope, enable this
 #undef SCOPEDEBUG
 #ifdef SCOPEDEBUG
-#define DmxTriggerPin 4	// low spike at beginning of start byte
-#define DmxISRPin 3	// low during interrupt service routines
+#define DmxTriggerPin 4 // low spike at beginning of start byte
+#define DmxISRPin 3 // low during interrupt service routines
 #endif
 
 // ----- Timing, Testing, and Debugging helpers ----- 
@@ -378,7 +381,7 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, u
     _startAddress = 1;
     strcpy (deviceLabel, "new");
     _devID[4] = random255(); // random(255);
-    _devID[5] = random255(); // random(255);	
+    _devID[5] = random255(); // random(255);
   } // if 
   _saveEEPRom();
 
@@ -540,16 +543,36 @@ void DMXSerialClass2::tick(void)
           } // if 
 
         } else if (Parameter == SWAPINT(E120_DISC_UN_MUTE)) { // 0x0003
-          _isMute = false;
           isHandled = true;
-          if (packetIsForMe) // 05.12.2013
-            respondMessage(true); // 21.11.2013
+          if (packetIsForMe) { // 05.12.2013
+            if (_rdm.packet.DataLength > 0) {
+              // Unexpected data
+              // Do nothing
+            } else {
+              _isMute = false;
+              // Control field
+              _rdm.packet.Data[0] = 0b00000000;
+              _rdm.packet.Data[1] = 0b00000000;
+              _rdm.packet.DataLength = 2;
+              respondMessage(true); // 21.11.2013
+            }
+          }
           
         } else if (Parameter == SWAPINT(E120_DISC_MUTE)) { // 0x0002
-          _isMute = true;
           isHandled = true;
-          if (packetIsForMe) // 05.12.2013
-            respondMessage(true); // 21.11.2013
+          if (packetIsForMe) { // 05.12.2013
+            if (_rdm.packet.DataLength > 0) {
+              // Unexpected data
+              // Do nothing
+            } else {
+              _isMute = true;
+              // Control field
+              _rdm.packet.Data[0] = 0b00000000;
+              _rdm.packet.Data[1] = 0b00000000;
+              _rdm.packet.DataLength = 2;
+              respondMessage(true); // 21.11.2013
+            }
+          }
 
         } // if
 
@@ -583,7 +606,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
 
   // call the device specific method
   if ((! handled) && (_rdmFunc)) {
-    handled = _rdmFunc(&_rdm.packet);
+    handled = _rdmFunc(&_rdm.packet, &nackReason);
   } // if
   
   // if not already handled the command: handle it using this implementation
@@ -594,6 +617,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         if (_rdm.packet.DataLength != 1) {
           // Oversized data
           nackReason = E120_NR_FORMAT_ERROR;
+        } else if ((_rdm.packet.Data[0] != 0) && (_rdm.packet.Data[0] != 1)) {
+          // Out of range data
+          nackReason = E120_NR_DATA_OUT_OF_RANGE;
         } else {
           _identifyMode = _rdm.packet.Data[0] != 0;
           _rdm.packet.DataLength = 0;
@@ -603,6 +629,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         if (_rdm.packet.DataLength > 0) {
           // Unexpected data
           nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           _rdm.packet.Data[0] = _identifyMode;
           _rdm.packet.DataLength = 1;
@@ -614,13 +643,16 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
       if (_rdm.packet.DataLength > 0) {
         // Unexpected data
         nackReason = E120_NR_FORMAT_ERROR;
+      } else if (_rdm.packet.SubDev != 0) {
+        // No sub-devices supported
+        nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
       } else {
         // return all device info data 
         DEVICEINFO *devInfo = (DEVICEINFO *)(_rdm.packet.Data); // The data has to be responsed in the Data buffer.
 
         devInfo->protocolMajor = 1;
         devInfo->protocolMinor = 0;
-        devInfo->deviceModel = SWAPINT(1);
+        devInfo->deviceModel = SWAPINT(_initData->deviceModelId);
         devInfo->productCategory = SWAPINT(E120_PRODUCT_CATEGORY_DIMMER_CS_LED);
         devInfo->softwareVersion = SWAPINT32(0x01000000);// 0x04020900;
         devInfo->footprint = SWAPINT(_initData->footprint);
@@ -638,6 +670,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
       if (_rdm.packet.DataLength > 0) {
         // Unexpected data
         nackReason = E120_NR_FORMAT_ERROR;
+      } else if (_rdm.packet.SubDev != 0) {
+        // No sub-devices supported
+        nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
       } else {
         // return the manufacturer label
         _rdm.packet.DataLength = strlen(_initData->manufacturerLabel);
@@ -649,6 +684,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
       if (_rdm.packet.DataLength > 0) {
         // Unexpected data
         nackReason = E120_NR_FORMAT_ERROR;
+      } else if (_rdm.packet.SubDev != 0) {
+        // No sub-devices supported
+        nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
       } else {
         // return the DEVICE MODEL DESCRIPTION
         _rdm.packet.DataLength = strlen(_initData->deviceModel);
@@ -673,6 +711,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         if (_rdm.packet.DataLength > 0) {
           // Unexpected data
           nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           _rdm.packet.DataLength = strlen(deviceLabel);
           memcpy(_rdm.packet.Data, deviceLabel, _rdm.packet.DataLength);
@@ -684,6 +725,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
       if (_rdm.packet.DataLength > 0) {
         // Unexpected data
         nackReason = E120_NR_FORMAT_ERROR;
+      } else if (_rdm.packet.SubDev != 0) {
+        // No sub-devices supported
+        nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
       } else {
         // return the SOFTWARE_VERSION_LABEL
         _rdm.packet.DataLength = strlen(_softwareLabel);
@@ -714,6 +758,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         if (_rdm.packet.DataLength > 0) {
           // Unexpected data
           nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           WRITEINT(_rdm.packet.Data, _startAddress);
           _rdm.packet.DataLength = 2;
@@ -726,6 +773,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         if (_rdm.packet.DataLength > 0) {
           // Unexpected data
           nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           // Some supported PIDs shouldn't be returned as per the standard, these are:
           // E120_DISC_UNIQUE_BRANCH
@@ -740,7 +790,6 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           WRITEINT(_rdm.packet.Data   , E120_MANUFACTURER_LABEL);
           WRITEINT(_rdm.packet.Data+ 2, E120_DEVICE_MODEL_DESCRIPTION);
           WRITEINT(_rdm.packet.Data+ 4, E120_DEVICE_LABEL);
-          // TODO: Fixme, the below doesn't give the correct results from SUPPORTED_PARAMETERS
           for (int n = 0; n < _initData->additionalCommandsLength; n++) {
             WRITEINT(_rdm.packet.Data+6+n+n, _initData->additionalCommands[n]);
           }
@@ -834,10 +883,10 @@ ISR(USARTn_RX_vect)
 {
   //  digitalWrite(rxStatusPin, HIGH);
   uint8_t  USARTstate= UCSRnA;    //get state before data!
-  uint8_t  DmxByte   = UDRn;	    //get data
-  uint8_t  DmxState  = _dmxState;	//just load once from SRAM to increase speed
+  uint8_t  DmxByte   = UDRn;      //get data
+  uint8_t  DmxState  = _dmxState; //just load once from SRAM to increase speed
 
-  if (USARTstate & (1<<FEn)) {  	//check for break
+  if (USARTstate & (1<<FEn)) { //check for break
     _dmxState = BREAK; // break condition detected.
     _dmxPos= 0;        // The next data byte is the start byte
 
@@ -863,34 +912,34 @@ ISR(USARTn_RX_vect)
     
   } else if (DmxState == DMXDATA) {
     // another DMX byte
-    _dmxData[_dmxPos++]= DmxByte;	// store received data into dmx data buffer.
+    _dmxData[_dmxPos++]= DmxByte;  // store received data into DMX data buffer.
 
     if (_dmxPos > DMXSERIAL_MAX) { // all channels done.
-      _dmxState = IDLE;	// wait for next break
+      _dmxState = IDLE; // wait for next break
     } // if
    
   } else if (DmxState == RDMDATA) {
     // another RDM byte
     if (_dmxPos >= (int)sizeof(_rdm.buffer)) {
       // too much data ... 
-      _dmxState = IDLE;	// wait for next break
+      _dmxState = IDLE; // wait for next break
     } else {
       _rdm.buffer[_dmxPos++] = DmxByte;
       _rdmCheckSum += DmxByte;
 
       if (_dmxPos == _rdm.packet.Length) {
         // all data received. Now getting checksum !
-        _dmxState = CHECKSUMH; // wait for checkSum High Byte
+        _dmxState = CHECKSUMH; // wait for checksum High Byte
       } // if
     } // if
 
   } else if (DmxState == CHECKSUMH) {
-    // High byte of RDM chechsum -> subtract from checksum
+    // High byte of RDM checksum -> subtract from checksum
     _rdmCheckSum -= DmxByte << 8;
     _dmxState = CHECKSUML;
 
   } else if (DmxState == CHECKSUML) {
-    // Low byte of RDM chechsum -> subtract from checksum
+    // Low byte of RDM checksum -> subtract from checksum
     _rdmCheckSum -= DmxByte;
 
     // now check some error conditions and adressing issues
@@ -898,11 +947,11 @@ ISR(USARTn_RX_vect)
       // prepare for answering when tick() is called
       _rdmAvailable = true;
       _gotLastPacket = millis(); // remember current (relative) time in msecs.
-      // TIMING: remmber when the last byte was sent
+      // TIMING: remember when the last byte was sent
       _timingReceiveEnd = micros();
     } // if
 
-    _dmxState = IDLE; 	// wait for next break or RDM package processing.
+    _dmxState = IDLE; // wait for next break or RDM package processing.
   } // if
 
 } // ISR(USART_RX_vect)

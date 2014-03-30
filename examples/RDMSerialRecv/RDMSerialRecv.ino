@@ -25,6 +25,8 @@
 // 15.05.2013 Arduino Leonard and Arduino MEGA compatibility
 // 15.12.2013 ADD: output information on a LEONARDO board by using the #define SERIAL_DEBUG definition
 //            If you have to save pgm space you can delete the inner lines of this "#if" blocks
+// 24.01.2014 Peter Newman/Sean Sill: Get device specific PIDs returning properly in supportedParameters
+// 24.01.2014 Peter Newman: Make the device specific PIDs compliant with the OLA RDM Tests. Add device model ID option
 // - - - - -
 
 #include <EEPROM.h>
@@ -52,12 +54,14 @@ void rgb(byte r, byte g, byte b)
   analogWrite(BluePin,  b);
 } // rgb()
 
-// see DMSXSerial.h for the definition of the fields of this structure
+// see DMXSerial2.h for the definition of the fields of this structure
+const uint16_t my_pids[] = {E120_DEVICE_HOURS, E120_LAMP_HOURS};
 struct RDMINIT rdmInit = {
-  "mathertel.de",
-  "Arduino RDM Device",
+  "mathertel.de", // Manufacturer Label
+  1, // Device Model ID
+  "Arduino RDM Device", // Device Model Label
   3, // footprint
-  2, (uint16_t[]){SWAPINT(E120_DEVICE_HOURS), SWAPINT(E120_LAMP_HOURS)}
+  (sizeof(my_pids)/sizeof(uint16_t)), my_pids
 };
 
 
@@ -150,31 +154,57 @@ void loop() {
 
 // This function was registered to the DMXSerial2 library in the initRDM call.
 // Here device specific RDM Commands are implemented.
-boolean processCommand(struct RDMDATA *rdm)
+boolean processCommand(struct RDMDATA *rdm, uint16_t *nackReason)
 {
   byte CmdClass       = rdm->CmdClass;     // command class
   uint16_t Parameter  = rdm->Parameter;	   // parameter ID
   boolean handled = false;
 
 // This is a sample of how to return some device specific data
-  if ((CmdClass == E120_GET_COMMAND) && (Parameter == SWAPINT(E120_DEVICE_HOURS))) { // 0x0400
-    rdm->DataLength = 4;
-    rdm->Data[0] = 0;
-    rdm->Data[1] = 0;
-    rdm->Data[2] = 2;
-    rdm->Data[3] = 0;
-    handled = true;
+  if (Parameter == SWAPINT(E120_DEVICE_HOURS)) { // 0x0400
+    if (CmdClass == E120_GET_COMMAND) {
+      if (rdm->DataLength > 0) {
+        // Unexpected data
+        *nackReason = E120_NR_FORMAT_ERROR;
+      } else if (rdm->SubDev != 0) {
+        // No sub-devices supported
+        *nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+      } else {
+        rdm->DataLength = 4;
+        rdm->Data[0] = 0;
+        rdm->Data[1] = 0;
+        rdm->Data[2] = 2;
+        rdm->Data[3] = 0;
+        handled = true;
+      }
+    } else if (CmdClass == E120_SET_COMMAND) {
+      // This device doesn't support set
+      *nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+    }
 
-  } else if ((CmdClass == E120_GET_COMMAND) && (Parameter == SWAPINT(E120_LAMP_HOURS))) { // 0x0401
-    rdm->DataLength = 4;
-    rdm->Data[0] = 0;
-    rdm->Data[1] = 0;
-    rdm->Data[2] = 0;
-    rdm->Data[3] = 1;
-    handled = true;
+  } else if (Parameter == SWAPINT(E120_LAMP_HOURS)) { // 0x0401
+    if (CmdClass == E120_GET_COMMAND) {
+      if (rdm->DataLength > 0) {
+        // Unexpected data
+        *nackReason = E120_NR_FORMAT_ERROR;
+      } else if (rdm->SubDev != 0) {
+        // No sub-devices supported
+        *nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+      } else {
+        rdm->DataLength = 4;
+        rdm->Data[0] = 0;
+        rdm->Data[1] = 0;
+        rdm->Data[2] = 0;
+        rdm->Data[3] = 1;
+        handled = true;
+      }
+    } else if (CmdClass == E120_SET_COMMAND) {
+      // This device doesn't support set
+      *nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+    }
   } // if
   
-  return(handled);
+  return handled;
 } // processCommand
 
 
