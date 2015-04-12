@@ -33,14 +33,15 @@
 // 21.11.2013 response to E120_DISC_MUTE and E120_DISC_UN_MUTE messages as required by the spec.
 // 03.12.2013 Code merged from raumzeitlabor
 // 04.12.2013 Allow manufacturer broadcasts
-// 05.12.2013 FIX: respond only to direct commands as required by the spec.
+// 05.12.2013 FIX: response only to direct commands as required by the spec.
 // 13.12.2013 ADD: getDeviceID() function added
 // 15.12.2013 introducing the type DEVICEID and copy by using memcpy to save pgm space.
 // 12.01.2014 Peter Newman: make the responder more compliant with the OLA RDM Tests
 // 24.01.2014 Peter Newman: More compliance with the OLA RDM Tests around sub devices and mute messages
 // 24.01.2014 Peter Newman/Sean Sill: Get device specific PIDs returning properly in supportedParameters
 // 24.01.2014 Peter Newman: Make the device specific PIDs compliant with the OLA RDM Tests. Add device model ID option
-
+// 12.04.2015 making library Arduino 1.6.x compatible
+// 12.04.2015 change of using datatype boolean to bool8.
 // - - - - -
 
 #include "Arduino.h"
@@ -285,13 +286,13 @@ union RDMMEM {
 
 
 // This flag will be set when a full RDM packet was received.
-boolean _rdmAvailable;
+bool8 _rdmAvailable;
 
 // This is the current 16 bit checksum for RDM commands, used by the interrupt routines.
 uint16_t _rdmCheckSum; 
 
 // static data that is not needed externally so it is not put into the class definition.
-boolean _isMute;    // is set to true when RDM discovery command muted this device.
+bool8 _isMute;    // is set to true when RDM discovery command muted this device.
 
 uint8_t _dmxModePin = 2;
 uint8_t _dmxModeOut = HIGH;
@@ -334,7 +335,7 @@ DMXSerialClass2 DMXSerial2;
 void _DMXSerialBaud(uint16_t baud_setting, uint8_t format);
 void _DMXSerialWriteByte(uint8_t data);
 
-void respondMessage(boolean isHandled, uint16_t nackReason = E120_NR_UNKNOWN_PID);
+void respondMessage(bool8 isHandled, uint16_t nackReason = E120_NR_UNKNOWN_PID);
 int random255();
 
 // ----- Class implementation -----
@@ -453,7 +454,7 @@ void DMXSerialClass2::attachRDMCallback(RDMCallbackFunction newFunction)
 // some functions to hide the internal variables from beeing changed
 
 unsigned long DMXSerialClass2::noDataSince() { return(millis() - _gotLastPacket);}
-boolean DMXSerialClass2::isIdentifyMode() { return(_identifyMode); }
+bool8 DMXSerialClass2::isIdentifyMode() { return(_identifyMode); }
 uint16_t DMXSerialClass2::getStartAddress() { return(_startAddress); }
 uint16_t DMXSerialClass2::getFootprint() { return(_initData->footprint); }
 
@@ -468,10 +469,10 @@ void DMXSerialClass2::tick(void)
     _rdmAvailable = false;
 
     // respond to RDM commands now.
-    boolean packetIsForMe = false;
-    boolean packetIsForGroup = false;
-    boolean packetIsForAll = false;
-    boolean isHandled = false;
+    bool8 packetIsForMe = false;
+    bool8 packetIsForGroup = false;
+    bool8 packetIsForAll = false;
+    bool8 isHandled = false;
 
     struct RDMDATA *rdm = &_rdm.packet;
     
@@ -600,7 +601,7 @@ void DMXSerialClass2::term(void)
 // manufacturer label, DMX Start address.
 // When parameters are chenged by a SET command they are persisted into EEPROM.
 // When doRespond is true, send an answer back to the controller node.
-void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, boolean handled, boolean doRespond)
+void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 handled, bool8 doRespond)
 {
   uint16_t nackReason = E120_NR_UNKNOWN_PID;
 
@@ -983,7 +984,7 @@ ISR(USARTn_TX_vect)
 
 
 // send back original Message including changed data in some cases
-void respondMessage(boolean isHandled, uint16_t nackReason)
+void respondMessage(bool8 isHandled, uint16_t nackReason)
 {
   int bufferLen;
   uint16_t checkSum = 0; 

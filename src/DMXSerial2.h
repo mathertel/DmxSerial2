@@ -12,6 +12,8 @@
 // 22.01.2013 first published version to support RDM
 // 01.03.2013 finished some "TIMING" topics
 // 08.03.2013 finished as a library
+// 12.04.2015 making library Arduino 1.6.x compatible
+// 12.04.2015 change of using datatype boolean to bool8.
 // - - - - -
 
 #ifndef DmxSerial_h
@@ -33,7 +35,7 @@
 
 // ----- Types -----
 
-typedef uint8_t boolean;
+typedef uint8_t bool8;
 typedef uint8_t byte;
 
 
@@ -83,7 +85,7 @@ struct RDMDATA {
 // ----- Callback function types -----
 
 extern "C" {
-  typedef boolean (*RDMCallbackFunction)(struct RDMDATA *buffer, uint16_t *nackReason);
+  typedef bool8 (*RDMCallbackFunction)(struct RDMDATA *buffer, uint16_t *nackReason);
 }
 
 // ----- Library Class -----
@@ -131,7 +133,7 @@ class DMXSerialClass2
     // ----- RDM specific members -----
     
     // Return true when identify mode was set on by controller.
-    boolean isIdentifyMode();
+    bool8 isIdentifyMode();
 
     // Returns the Device ID. Copies the UID to the buffer passed through the uid argument.
     void getDeviceID(DEVICEID id);
@@ -155,13 +157,13 @@ class DMXSerialClass2
     char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH];
 
     // don't use that method from extern.
-    void _processRDMMessage(byte CmdClass, uint16_t Parameter, boolean isHandled);
+    void _processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 isHandled);
 
     // save all data to EEPROM
 	void _saveEEPRom();
   private:
     // process a relevant message
-    void _processRDMMessage(byte CmdClass, uint16_t Parameter, boolean isHandled, boolean doRespond);
+    void _processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 isHandled, bool8 doRespond);
   
     // common internal initialization function.
     void _baseInit();
@@ -174,7 +176,7 @@ class DMXSerialClass2
 
     // intern parameter settings
     const char *_softwareLabel;
-    boolean  _identifyMode;
+    bool8  _identifyMode;
     uint16_t _startAddress;
 }; // class DMXSerialClass2
 
