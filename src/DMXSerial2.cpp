@@ -42,6 +42,8 @@
 // 24.01.2014 Peter Newman: Make the device specific PIDs compliant with the OLA RDM Tests. Add device model ID option
 // 12.04.2015 making library Arduino 1.6.x compatible
 // 12.04.2015 change of using datatype boolean to bool8.
+// 15.06.2015 On DMX lines sometimes a BREAK condition occures inbetween RDM packets from the controller
+//            and the device response. Ignore that when no data has arrived.
 // - - - - -
 
 #include "Arduino.h"
@@ -464,7 +466,7 @@ uint16_t DMXSerialClass2::getFootprint() { return(_initData->footprint); }
 // see http://www.enttec.com/docs/sniffer_manual.pdf
 void DMXSerialClass2::tick(void)
 {
-  if ((_dmxState == IDLE) && (_rdmAvailable)) {
+  if (((_dmxState == IDLE) || (_dmxState == BREAK)) && (_rdmAvailable)) { // 15.06.2015
     // never process twice.
     _rdmAvailable = false;
 
