@@ -796,12 +796,14 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           // E120_DEVICE_INFO
           // E120_DMX_START_ADDRESS
           // E120_SOFTWARE_VERSION_LABEL
-          _rdm.packet.DataLength = 2 * (3 + _initData->additionalCommandsLength);
+          _rdm.packet.DataLength = 2 * (5 + _initData->additionalCommandsLength);
           WRITEINT(_rdm.packet.Data   , E120_MANUFACTURER_LABEL);
           WRITEINT(_rdm.packet.Data+ 2, E120_DEVICE_MODEL_DESCRIPTION);
           WRITEINT(_rdm.packet.Data+ 4, E120_DEVICE_LABEL);
+          WRITEINT(_rdm.packet.Data+ 6, E120_SENSOR_DEFINITION);
+          WRITEINT(_rdm.packet.Data+ 8, E120_SENSOR_VALUE);
           for (int n = 0; n < _initData->additionalCommandsLength; n++) {
-            WRITEINT(_rdm.packet.Data+6+n+n, _initData->additionalCommands[n]);
+            WRITEINT(_rdm.packet.Data+10+n+n, _initData->additionalCommands[n]);
           }
           handled = true;
         }
