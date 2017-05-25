@@ -62,7 +62,8 @@ struct RDMINIT rdmInit = {
   1, // Device Model ID
   "Arduino RDM Device", // Device Model Label
   3, // footprint
-  (sizeof(my_pids)/sizeof(uint16_t)), my_pids
+  (sizeof(my_pids)/sizeof(uint16_t)), my_pids,
+  0, NULL
 };
 
 
