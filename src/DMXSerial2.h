@@ -131,7 +131,10 @@ class DMXSerialClass2
 {
   public:
     // Initialize for RDM mode.
-    void    init (struct RDMINIT *initData, RDMCallbackFunction func, RDMGetSensorValue sensorFunc = NULL, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1);
+    void    init (struct RDMINIT *initData, RDMCallbackFunction func, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1) {
+	  init(initData, func, NULL, modePin, modeIn, modeOut);
+	}
+    void    init (struct RDMINIT *initData, RDMCallbackFunction func, RDMGetSensorValue sensorFunc, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1);
     
     // Read the last known value of a channel.
     uint8_t read       (int channel);
