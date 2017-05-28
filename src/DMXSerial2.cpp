@@ -800,13 +800,13 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           WRITEINT(_rdm.packet.Data   , E120_MANUFACTURER_LABEL);
           WRITEINT(_rdm.packet.Data+ 2, E120_DEVICE_MODEL_DESCRIPTION);
           WRITEINT(_rdm.packet.Data+ 4, E120_DEVICE_LABEL);
-		  uint8_t offset = 6;
-		  if (_initData->sensorsLength > 0) {
+          uint8_t offset = 6;
+          if (_initData->sensorsLength > 0) {
             _rdm.packet.DataLength += 2 * 2;
-			offset += 2 * 2;
+            offset += 2 * 2;
             WRITEINT(_rdm.packet.Data+ 6, E120_SENSOR_DEFINITION);
             WRITEINT(_rdm.packet.Data+ 8, E120_SENSOR_VALUE);
-		  }
+          }
           for (int n = 0; n < _initData->additionalCommandsLength; n++) {
             WRITEINT(_rdm.packet.Data+offset+n+n, _initData->additionalCommands[n]);
           }
@@ -888,7 +888,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         }
       } else if (CmdClass == E120_SET_COMMAND) {
         // Unhandled set. Set on a sensor is used to reset stats.
-		// User should process it in own handler when sensor supports high/low or recorded value.
+        // User should process it in own handler when sensor supports high/low or recorded value.
         nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
       }
 
