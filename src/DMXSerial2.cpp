@@ -819,7 +819,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
 
 // ADD: PARAMETER_DESCRIPTION
 
-    } else if (Parameter == SWAPINT(E120_SENSOR_DEFINITION)) { // 0x0200
+    } else if (Parameter == SWAPINT(E120_SENSOR_DEFINITION) && _initData->sensorsLength > 0) { // 0x0200
       if (CmdClass == E120_GET_COMMAND) {
         if (_rdm.packet.DataLength != 1) {
           // Unexpected data
@@ -851,7 +851,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         // Unexpected set
         nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
       }
-    } else if (Parameter == SWAPINT(E120_SENSOR_VALUE)) { // 0x0201
+    } else if (Parameter == SWAPINT(E120_SENSOR_VALUE) && _initData->sensorsLength > 0) { // 0x0201
       if (CmdClass == E120_GET_COMMAND) {
         if (_rdm.packet.DataLength != 1) {
           // Unexpected data
