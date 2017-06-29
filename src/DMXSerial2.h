@@ -86,6 +86,7 @@ struct RDMDATA {
 
 extern "C" {
   typedef bool8 (*RDMCallbackFunction)(struct RDMDATA *buffer, uint16_t *nackReason);
+  typedef bool8 (*RDMGetSensorValue)(uint8_t sensorNr, int16_t *value, int16_t *lowestValue, int16_t *highestValue, int16_t *recordedValue);
 }
 
 // ----- Library Class -----
@@ -98,6 +99,18 @@ struct RDMPERSONALITY {
   // maybe more here... when supporting more personalitites.
 }; // struct RDMPERSONALITY
 
+struct RDMSENSOR {
+  uint8_t type;
+  uint8_t unit;
+  uint8_t prefix;
+  int16_t rangeMin;
+  int16_t rangeMax;
+  int16_t normalMin;
+  int16_t normalMax;
+  bool8 lowHighSupported;
+  bool8 recordedSupported;  
+  char *description;
+}; // struct RDMSENSOR
 
 struct RDMINIT {
   char          *manufacturerLabel; //
@@ -108,6 +121,8 @@ struct RDMINIT {
   // RDMPERSONALITY *personalities;
   const uint16_t        additionalCommandsLength;
   const uint16_t       *additionalCommands;
+  const uint8_t sensorsLength;
+  const RDMSENSOR *sensors;
 }; // struct RDMINIT
 
 
@@ -116,7 +131,10 @@ class DMXSerialClass2
 {
   public:
     // Initialize for RDM mode.
-    void    init (struct RDMINIT *initData, RDMCallbackFunction func, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1);
+    void    init (struct RDMINIT *initData, RDMCallbackFunction func, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1) {
+      init(initData, func, NULL, modePin, modeIn, modeOut);
+    }
+    void    init (struct RDMINIT *initData, RDMCallbackFunction func, RDMGetSensorValue sensorFunc, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1);
     
     // Read the last known value of a channel.
     uint8_t read       (int channel);
@@ -147,6 +165,9 @@ class DMXSerialClass2
     // Register a device-specific implemented function for RDM callbacks
     void    attachRDMCallback (RDMCallbackFunction newFunction);
 
+    // Register a device-specific implemented function for getting sensor values
+    void    attachSensorCallback (RDMGetSensorValue newFunction);
+
     // check for unprocessed RDM Command.
     void    tick(void);
 
@@ -170,6 +191,9 @@ class DMXSerialClass2
 
     // callback function to device specific code
     RDMCallbackFunction _rdmFunc;
+
+    // callback function to get sensor value
+    RDMGetSensorValue _sensorFunc;
 
     // remember the given manufacturer label and device model strings during init
     struct RDMINIT *_initData;

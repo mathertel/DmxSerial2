@@ -30,6 +30,7 @@ isIdentifyMode	KEYWORD2
 getStartAddress	KEYWORD2
 getFootprint	KEYWORD2
 attachRDMCallback	KEYWORD2
+attachSensorCallback	KEYWORD2
 tick	KEYWORD2
 term	KEYWORD2
 deviceLabel	KEYWORD2
