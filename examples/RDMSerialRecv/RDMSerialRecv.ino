@@ -27,6 +27,7 @@
 //            If you have to save pgm space you can delete the inner lines of this "#if" blocks
 // 24.01.2014 Peter Newman/Sean Sill: Get device specific PIDs returning properly in supportedParameters
 // 24.01.2014 Peter Newman: Make the device specific PIDs compliant with the OLA RDM Tests. Add device model ID option
+// 12.04.2015 change of using datatype boolean to bool8.
 // - - - - -
 
 #include <EEPROM.h>
@@ -61,7 +62,8 @@ struct RDMINIT rdmInit = {
   1, // Device Model ID
   "Arduino RDM Device", // Device Model Label
   3, // footprint
-  (sizeof(my_pids)/sizeof(uint16_t)), my_pids
+  (sizeof(my_pids)/sizeof(uint16_t)), my_pids,
+  0, NULL
 };
 
 
@@ -154,11 +156,11 @@ void loop() {
 
 // This function was registered to the DMXSerial2 library in the initRDM call.
 // Here device specific RDM Commands are implemented.
-boolean processCommand(struct RDMDATA *rdm, uint16_t *nackReason)
+bool8 processCommand(struct RDMDATA *rdm, uint16_t *nackReason)
 {
   byte CmdClass       = rdm->CmdClass;     // command class
   uint16_t Parameter  = rdm->Parameter;	   // parameter ID
-  boolean handled = false;
+  bool8 handled = false;
 
 // This is a sample of how to return some device specific data
   if (Parameter == SWAPINT(E120_DEVICE_HOURS)) { // 0x0400

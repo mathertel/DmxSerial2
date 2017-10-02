@@ -33,14 +33,18 @@
 // 21.11.2013 response to E120_DISC_MUTE and E120_DISC_UN_MUTE messages as required by the spec.
 // 03.12.2013 Code merged from raumzeitlabor
 // 04.12.2013 Allow manufacturer broadcasts
-// 05.12.2013 FIX: respond only to direct commands as required by the spec.
+// 05.12.2013 FIX: response only to direct commands as required by the spec.
 // 13.12.2013 ADD: getDeviceID() function added
 // 15.12.2013 introducing the type DEVICEID and copy by using memcpy to save pgm space.
 // 12.01.2014 Peter Newman: make the responder more compliant with the OLA RDM Tests
 // 24.01.2014 Peter Newman: More compliance with the OLA RDM Tests around sub devices and mute messages
 // 24.01.2014 Peter Newman/Sean Sill: Get device specific PIDs returning properly in supportedParameters
 // 24.01.2014 Peter Newman: Make the device specific PIDs compliant with the OLA RDM Tests. Add device model ID option
-
+// 12.04.2015 making library Arduino 1.6.x compatible
+// 12.04.2015 change of using datatype boolean to bool8.
+// 15.06.2015 On DMX lines sometimes a BREAK condition occures inbetween RDM packets from the controller
+//            and the device response. Ignore that when no data has arrived.
+// 25.05.2017 Stefan Krupop: Add support for sensors
 // - - - - -
 
 #include "Arduino.h"
@@ -285,13 +289,13 @@ union RDMMEM {
 
 
 // This flag will be set when a full RDM packet was received.
-boolean _rdmAvailable;
+bool8 _rdmAvailable;
 
 // This is the current 16 bit checksum for RDM commands, used by the interrupt routines.
 uint16_t _rdmCheckSum; 
 
 // static data that is not needed externally so it is not put into the class definition.
-boolean _isMute;    // is set to true when RDM discovery command muted this device.
+bool8 _isMute;    // is set to true when RDM discovery command muted this device.
 
 uint8_t _dmxModePin = 2;
 uint8_t _dmxModeOut = HIGH;
@@ -334,14 +338,14 @@ DMXSerialClass2 DMXSerial2;
 void _DMXSerialBaud(uint16_t baud_setting, uint8_t format);
 void _DMXSerialWriteByte(uint8_t data);
 
-void respondMessage(boolean isHandled, uint16_t nackReason = E120_NR_UNKNOWN_PID);
+void respondMessage(bool8 isHandled, uint16_t nackReason = E120_NR_UNKNOWN_PID);
 int random255();
 
 // ----- Class implementation -----
 
 // Initialize or reinitialize the DMX RDM mode.
 // The other values are stored for later use with the specific commands.
-void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, uint8_t modePin, uint8_t modeIn, uint8_t modeOut)
+void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, RDMGetSensorValue sensorFunc, uint8_t modePin, uint8_t modeIn, uint8_t modeOut)
 {
   // This structure is defined for mapping the values in the EEPROM
   struct EEPROMVALUES eeprom;
@@ -349,6 +353,7 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, u
   // save the given initData for later use.
   _initData = initData;
   _rdmFunc = func;
+  _sensorFunc = sensorFunc;
 
   _dmxModePin = modePin;
   _dmxModeIn = modeIn;
@@ -449,11 +454,16 @@ void DMXSerialClass2::attachRDMCallback(RDMCallbackFunction newFunction)
   _rdmFunc = newFunction;
 } // attachRDMCallback
 
+// Register a self implemented function to get sensor values
+void DMXSerialClass2::attachSensorCallback(RDMGetSensorValue newFunction)
+{
+  _sensorFunc = newFunction;
+} // attachSensorCallback
 
 // some functions to hide the internal variables from beeing changed
 
 unsigned long DMXSerialClass2::noDataSince() { return(millis() - _gotLastPacket);}
-boolean DMXSerialClass2::isIdentifyMode() { return(_identifyMode); }
+bool8 DMXSerialClass2::isIdentifyMode() { return(_identifyMode); }
 uint16_t DMXSerialClass2::getStartAddress() { return(_startAddress); }
 uint16_t DMXSerialClass2::getFootprint() { return(_initData->footprint); }
 
@@ -463,15 +473,15 @@ uint16_t DMXSerialClass2::getFootprint() { return(_initData->footprint); }
 // see http://www.enttec.com/docs/sniffer_manual.pdf
 void DMXSerialClass2::tick(void)
 {
-  if ((_dmxState == IDLE) && (_rdmAvailable)) {
+  if (((_dmxState == IDLE) || (_dmxState == BREAK)) && (_rdmAvailable)) { // 15.06.2015
     // never process twice.
     _rdmAvailable = false;
 
     // respond to RDM commands now.
-    boolean packetIsForMe = false;
-    boolean packetIsForGroup = false;
-    boolean packetIsForAll = false;
-    boolean isHandled = false;
+    bool8 packetIsForMe = false;
+    bool8 packetIsForGroup = false;
+    bool8 packetIsForAll = false;
+    bool8 isHandled = false;
 
     struct RDMDATA *rdm = &_rdm.packet;
     
@@ -600,7 +610,7 @@ void DMXSerialClass2::term(void)
 // manufacturer label, DMX Start address.
 // When parameters are chenged by a SET command they are persisted into EEPROM.
 // When doRespond is true, send an answer back to the controller node.
-void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, boolean handled, boolean doRespond)
+void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 handled, bool8 doRespond)
 {
   uint16_t nackReason = E120_NR_UNKNOWN_PID;
 
@@ -660,7 +670,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         devInfo->personalityCount = 1;
         devInfo->startAddress = SWAPINT(_startAddress);
         devInfo->subDeviceCount = 0;
-        devInfo->sensorCount = 0;
+        devInfo->sensorCount = _initData->sensorsLength;
 
          _rdm.packet.DataLength = sizeof(DEVICEINFO);
         handled = true;
@@ -790,8 +800,15 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           WRITEINT(_rdm.packet.Data   , E120_MANUFACTURER_LABEL);
           WRITEINT(_rdm.packet.Data+ 2, E120_DEVICE_MODEL_DESCRIPTION);
           WRITEINT(_rdm.packet.Data+ 4, E120_DEVICE_LABEL);
+          uint8_t offset = 6;
+          if (_initData->sensorsLength > 0) {
+            _rdm.packet.DataLength += 2 * 2;
+            offset += 2 * 2;
+            WRITEINT(_rdm.packet.Data+ 6, E120_SENSOR_DEFINITION);
+            WRITEINT(_rdm.packet.Data+ 8, E120_SENSOR_VALUE);
+          }
           for (int n = 0; n < _initData->additionalCommandsLength; n++) {
-            WRITEINT(_rdm.packet.Data+6+n+n, _initData->additionalCommands[n]);
+            WRITEINT(_rdm.packet.Data+offset+n+n, _initData->additionalCommands[n]);
           }
           handled = true;
         }
@@ -801,6 +818,79 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
       }
 
 // ADD: PARAMETER_DESCRIPTION
+
+    } else if (Parameter == SWAPINT(E120_SENSOR_DEFINITION) && _initData->sensorsLength > 0) { // 0x0200
+      if (CmdClass == E120_GET_COMMAND) {
+        if (_rdm.packet.DataLength != 1) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          uint8_t sensorNr = _rdm.packet.Data[0];
+          if (sensorNr >= _initData->sensorsLength) {
+            // Out of range sensor
+            nackReason = E120_NR_DATA_OUT_OF_RANGE;
+          } else {
+            _rdm.packet.DataLength = 13 + strlen(_initData->sensors[sensorNr].description);
+            _rdm.packet.Data[0] = sensorNr;
+            _rdm.packet.Data[1] = _initData->sensors[sensorNr].type;
+            _rdm.packet.Data[2] = _initData->sensors[sensorNr].unit;
+            _rdm.packet.Data[3] = _initData->sensors[sensorNr].prefix;
+            WRITEINT(_rdm.packet.Data +  4, _initData->sensors[sensorNr].rangeMin);
+            WRITEINT(_rdm.packet.Data +  6, _initData->sensors[sensorNr].rangeMax);
+            WRITEINT(_rdm.packet.Data +  8, _initData->sensors[sensorNr].normalMin);
+            WRITEINT(_rdm.packet.Data + 10, _initData->sensors[sensorNr].normalMax);
+            _rdm.packet.Data[12] = (_initData->sensors[sensorNr].lowHighSupported ? 2 : 0) | (_initData->sensors[sensorNr].recordedSupported ? 1 : 0);
+            memcpy(_rdm.packet.Data + 13, _initData->sensors[sensorNr].description, _rdm.packet.DataLength - 13);
+            handled = true;
+          }
+        }
+      } else if (CmdClass == E120_SET_COMMAND) {
+        // Unexpected set
+        nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+      }
+    } else if (Parameter == SWAPINT(E120_SENSOR_VALUE) && _initData->sensorsLength > 0) { // 0x0201
+      if (CmdClass == E120_GET_COMMAND) {
+        if (_rdm.packet.DataLength != 1) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          uint8_t sensorNr = _rdm.packet.Data[0];
+          if (sensorNr >= _initData->sensorsLength) {
+            // Out of range sensor
+            nackReason = E120_NR_DATA_OUT_OF_RANGE;
+          } else {
+            int16_t sensorValue = 0;
+            int16_t lowestValue = 0;
+            int16_t highestValue = 0;
+            int16_t recordedValue = 0;
+            bool8 res = false;
+            if (_sensorFunc) {
+              res = _sensorFunc(sensorNr, &sensorValue, &lowestValue, &highestValue, &recordedValue);
+            }
+            if (res) {
+              _rdm.packet.DataLength = 9;
+              _rdm.packet.Data[0] = sensorNr;
+              WRITEINT(_rdm.packet.Data +  1, sensorValue);
+              WRITEINT(_rdm.packet.Data +  3, lowestValue);
+              WRITEINT(_rdm.packet.Data +  5, highestValue);
+              WRITEINT(_rdm.packet.Data +  7, recordedValue);
+              handled = true;
+            } else {
+              nackReason = E120_NR_HARDWARE_FAULT;
+            }
+          }
+        }
+      } else if (CmdClass == E120_SET_COMMAND) {
+        // Unhandled set. Set on a sensor is used to reset stats.
+        // User should process it in own handler when sensor supports high/low or recorded value.
+        nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+      }
 
     } else {
       handled = false;
@@ -983,7 +1073,7 @@ ISR(USARTn_TX_vect)
 
 
 // send back original Message including changed data in some cases
-void respondMessage(boolean isHandled, uint16_t nackReason)
+void respondMessage(bool8 isHandled, uint16_t nackReason)
 {
   int bufferLen;
   uint16_t checkSum = 0; 
