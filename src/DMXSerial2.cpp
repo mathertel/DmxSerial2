@@ -11,40 +11,8 @@
 // implementation. Right now it is only a experimental version with regards of the published second hand 
 // information about RDM available on the internet for free. (see links inside the code)
 //
-// 25.07.2011 creation of the DMXSerial library.
-// 10.09.2011 fully control the serial hardware register
-//            without using the Arduino Serial (HardwareSerial) class to avoid ISR implementation conflicts.
-// 01.12.2011 include file changed to work with the Arduino 1.0 environment
-// 28.12.2011 unused variable DmxCount removed
-// 10.05.2012 added method noDataSince to check how long no packet was received
-// 04.06.2012: set UCSRnA = 0 to use normal speed operation
-// 30.07.2012 corrected TX timings with UDRE and TX interrupts
-//            fixed bug in 512-channel RX
-// 02.11.2012 starting RDM related experimental version.
-// 22.01.2013 first published version to support RDM
-// 01.03.2013 finished some "TIMING" topics
-// 08.03.2013 finished as a library
-// 12.05.2013 added the defines to support Arduino MEGA 2560 (port 0 and 1) and Arduino Leonardo (port 1)
-// 15.05.2013 Arduino Leonard and Arduino MEGA compatibility
-// 16.05.2013 using #0987 as manufacurer id, that was registered to myself (mathertel.de).
-// 18.06.2013 implementing random device IDs
-// 01.09.2013 implemented all minimal required RDM parameters (+SOFTWARE_VERSION_LABEL, +SUPPORTED_PARAMETERS)
-// 06.09.2013 simplifications, removing pure DMX mode code and memory optimizations.
-// 21.11.2013 response to E120_DISC_MUTE and E120_DISC_UN_MUTE messages as required by the spec.
-// 03.12.2013 Code merged from raumzeitlabor
-// 04.12.2013 Allow manufacturer broadcasts
-// 05.12.2013 FIX: response only to direct commands as required by the spec.
-// 13.12.2013 ADD: getDeviceID() function added
-// 15.12.2013 introducing the type DEVICEID and copy by using memcpy to save pgm space.
-// 12.01.2014 Peter Newman: make the responder more compliant with the OLA RDM Tests
-// 24.01.2014 Peter Newman: More compliance with the OLA RDM Tests around sub devices and mute messages
-// 24.01.2014 Peter Newman/Sean Sill: Get device specific PIDs returning properly in supportedParameters
-// 24.01.2014 Peter Newman: Make the device specific PIDs compliant with the OLA RDM Tests. Add device model ID option
-// 12.04.2015 making library Arduino 1.6.x compatible
-// 12.04.2015 change of using datatype boolean to bool8.
-// 15.06.2015 On DMX lines sometimes a BREAK condition occures inbetween RDM packets from the controller
-//            and the device response. Ignore that when no data has arrived.
-// 25.05.2017 Stefan Krupop: Add support for sensors
+// History:
+// see DMXSerial2.h
 // - - - - -
 
 #include "Arduino.h"

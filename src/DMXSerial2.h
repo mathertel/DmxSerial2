@@ -7,13 +7,39 @@
 // 
 // Documentation and samples are available at http://www.mathertel.de/Arduino
 // 25.07.2011 creation of the DMXSerial library.
+// 10.09.2011 fully control the serial hardware register
+//            without using the Arduino Serial (HardwareSerial) class to avoid ISR implementation conflicts.
 // 01.12.2011 include file changed to work with the Arduino 1.0 environment
+// 28.12.2011 unused variable DmxCount removed
 // 10.05.2012 added method noDataSince to check how long no packet was received
+// 04.06.2012: set UCSRnA = 0 to use normal speed operation
+// 30.07.2012 corrected TX timings with UDRE and TX interrupts
+//            fixed bug in 512-channel RX
+// 02.11.2012 starting RDM related experimental version.
 // 22.01.2013 first published version to support RDM
 // 01.03.2013 finished some "TIMING" topics
 // 08.03.2013 finished as a library
+// 12.05.2013 added the defines to support Arduino MEGA 2560 (port 0 and 1) and Arduino Leonardo (port 1)
+// 15.05.2013 Arduino Leonard and Arduino MEGA compatibility
+// 16.05.2013 using #0987 as manufacurer id, that was registered to myself (mathertel.de).
+// 18.06.2013 implementing random device IDs
+// 01.09.2013 implemented all minimal required RDM parameters (+SOFTWARE_VERSION_LABEL, +SUPPORTED_PARAMETERS)
+// 06.09.2013 simplifications, removing pure DMX mode code and memory optimizations.
+// 21.11.2013 response to E120_DISC_MUTE and E120_DISC_UN_MUTE messages as required by the spec.
+// 03.12.2013 Code merged from raumzeitlabor
+// 04.12.2013 Allow manufacturer broadcasts
+// 05.12.2013 FIX: response only to direct commands as required by the spec.
+// 13.12.2013 ADD: getDeviceID() function added
+// 15.12.2013 introducing the type DEVICEID and copy by using memcpy to save pgm space.
+// 12.01.2014 Peter Newman: make the responder more compliant with the OLA RDM Tests
+// 24.01.2014 Peter Newman: More compliance with the OLA RDM Tests around sub devices and mute messages
+// 24.01.2014 Peter Newman/Sean Sill: Get device specific PIDs returning properly in supportedParameters
+// 24.01.2014 Peter Newman: Make the device specific PIDs compliant with the OLA RDM Tests. Add device model ID option
 // 12.04.2015 making library Arduino 1.6.x compatible
 // 12.04.2015 change of using datatype boolean to bool8.
+// 15.06.2015 On DMX lines sometimes a BREAK condition occures inbetween RDM packets from the controller
+//            and the device response. Ignore that when no data has arrived.
+// 25.05.2017 Stefan Krupop: Add support for sensors
 // - - - - -
 
 #ifndef DmxSerial_h
@@ -23,13 +49,10 @@
 
 // ----- Constants -----
 
-#define DMXSERIAL_MAX 512 // max. number of supported DMX data channels
-
-#define DMXSERIAL_MIN_SLOT_VALUE 0 // min. value a DMX512 slot can take
-
-#define DMXSERIAL_MAX_SLOT_VALUE 255 // max. value a DMX512 slot can take
-
-#define DMXSERIAL_MAX_RDM_STRING_LENGTH 32 // max. length of a string in RDM
+#define DMXSERIAL_MAX 512                  ///< The max. number of supported DMX data channels
+#define DMXSERIAL_MIN_SLOT_VALUE 0         ///< The min. value a DMX512 slot can take
+#define DMXSERIAL_MAX_SLOT_VALUE 255       ///< The max. value a DMX512 slot can take
+#define DMXSERIAL_MAX_RDM_STRING_LENGTH 32 ///< The max. length of a string in RDM
 
 // ----- Enumerations -----
 
@@ -39,15 +62,24 @@ typedef uint8_t bool8;
 typedef uint8_t byte;
 
 
-// This is the definition for a unique DEVICE ID.
-// DEVICEID[0..1] ESTA Manufacturer ID
-// DEVICEID[2..5] unique number
+/**
+ * @brief Type definition for a unique DEVICE ID.
+ * 
+ * DEVICEID[0..1] contains a ESTA Manufacturer ID. 
+ * DEVICEID[2..5] contains a unique number per device.
+ */
 typedef byte DEVICEID[6];
 
 // ----- structures -----
 
-// The RDMDATA structure (length = 24+data) is used by all GET/SET RDM commands.
-// The maximum permitted data length according to the spec is 231 bytes.
+
+/**
+ * @brief The RDMDATA structure defines the RDM network packages.
+ * 
+ * This structure has the size of (24+data) and is used by all GET/SET RDM commands.
+ * The maximum permitted data length according to the spec is 231 bytes.
+ */
+
 struct RDMDATA {
   byte     StartCode;    // Start Code 0xCC for RDM
   byte     SubStartCode; // Start Code 0x01 for RDM
@@ -68,24 +100,37 @@ struct RDMDATA {
 
 // ----- macros -----
 
-// 16-bit and 32-bit integers in the RDM protocol are transmitted highbyte - lowbyte.
-// but the ATMEGA processors store them in highbyte - lowbyte order.
-// Use SWAPINT to swap the 2 bytes of an 16-bit int to match the byte order on the DMX Protocol.
-// avoid using this macro on variables but use it on the constant definitions.
+/// @brief Use SWAPINT to swap the 2 bytes of an 16-bit int to match the byte order on the DMX Protocol.
+///
+/// 16-bit and 32-bit integers in the RDM protocol are transmitted highbyte - lowbyte.
+/// but the ATMEGA processors store them in highbyte - lowbyte order.
+/// avoid using this macro on variables but use it on the constant definitions.
 #define SWAPINT(i) (((i&0x00FF)<<8) | ((i&0xFF00)>>8))
-// Use SWAPINT32 to swap the 4 bytes of a 32-bit int to match the byte order on the DMX Protocol.
+
+/// Use SWAPINT32 to swap the 4 bytes of a 32-bit int to match the byte order on the DMX Protocol.
 #define SWAPINT32(i) ((i&0x000000ff)<<24) | ((i&0x0000ff00)<<8) | ((i&0x00ff0000)>>8) | ((i&0xff000000)>>24)
 
-// read a 16 bit number from a data buffer location
+/// read a 16 bit number from a data buffer location
 #define READINT(p) ((p[0]<<8) | (p[1]))
 
-// write a 16 bit number to a data buffer location
+/// write a 16 bit number to a data buffer location
 #define WRITEINT(p, d) (p)[0] = (d&0xFF00)>>8; (p)[1] = (d&0x00FF);
+
 
 // ----- Callback function types -----
 
 extern "C" {
+  /**
+   * @brief Callback function for RDM functions. 
+   * 
+   * @param [in,out] buffer Buffer containing the RDM network package.
+   * @param [in,out] nackReason on error a RDM Response NACK Reason Code.
+   */
   typedef bool8 (*RDMCallbackFunction)(struct RDMDATA *buffer, uint16_t *nackReason);
+
+  /**
+   * @brief Callback function for RDM sensors. 
+   */
   typedef bool8 (*RDMGetSensorValue)(uint8_t sensorNr, int16_t *value, int16_t *lowestValue, int16_t *highestValue, int16_t *recordedValue);
 }
 
@@ -130,75 +175,108 @@ struct RDMINIT {
 class DMXSerialClass2
 {
   public:
-    // Initialize for RDM mode.
+    /**
+     * @brief Initialize for RDM mode.
+     * @param [in] initData Startup parameters.
+     * @param [in] func Callback function for answering on device specific features.
+     * @param [in] modePin The pin used to switch the communication direction. This parameter is optiona and defaults to 2.
+     * @param [in] modeIn  The level for inbound communication. This parameter is optiona and defaults to 0 = LOW.
+     * @param [in] modeOut The level for outbound communication. This parameter is optiona and defaults to 1 = HIGH.
+     */
     void    init (struct RDMINIT *initData, RDMCallbackFunction func, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1) {
       init(initData, func, NULL, modePin, modeIn, modeOut);
     }
+
+    /**
+     * @brief Initialize for RDM mode with sensor.
+     * @param [in] initData Startup parameters.
+     * @param [in] func Callback function for answering on device specific features.
+     * @param [in] sensorFunc Callback function for retrieving a sensor value.
+     * @param [in] modePin The pin used to switch the communication direction. This parameter is optiona and defaults to 2.
+     * @param [in] modeIn  The level for inbound communication. This parameter is optiona and defaults to 0 = LOW.
+     * @param [in] modeOut The level for outbound communication. This parameter is optiona and defaults to 1 = HIGH.
+     */
     void    init (struct RDMINIT *initData, RDMCallbackFunction func, RDMGetSensorValue sensorFunc, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1);
     
-    // Read the last known value of a channel.
+    /**
+     * @brief Read the current value of a channel.
+     * @param [in] channel The channel number.
+     * @return uint8_t The current value.
+     */
     uint8_t read       (int channel);
 
     // Read the last known value of a channel by using the startAddress and footprint range.
     uint8_t readRelative(unsigned int channel);
 
-    // Write a new value of a channel.
+    /**
+     * @brief Write a new value to a channel.
+     * This function also can be called in DMXReceiver mode to set a channel value even when no data is received.
+     * It will be overwritten by the next received package.
+     * @param [in] channel The channel number.
+     * @param [in] value The current value.
+     * @return void
+     */
     void    write      (int channel, uint8_t value);
 
-    // Calculate how long no data backet was received
+    /**
+     * @brief Return the duration since data was received.
+     * On startup the internal timer is reset too.
+     * @return long milliseconds since last pdata package.
+     */
     unsigned long noDataSince();
 
     // ----- RDM specific members -----
     
-    // Return true when identify mode was set on by controller.
+    /// Return true when identify mode was set on by controller.
     bool8 isIdentifyMode();
 
-    // Returns the Device ID. Copies the UID to the buffer passed through the uid argument.
+    /// Returns the Device ID. Copies the UID to the buffer passed through the uid argument.
     void getDeviceID(DEVICEID id);
 
-    // Return the current DMX start address that is the first dmx address used by the device.
+    /// Return the current DMX start address that is the first dmx address used by the device.
     uint16_t getStartAddress();
 
-    // Return the current DMX footprint, that is the number of dmx addresses used by the device.
+    /// Return the current DMX footprint, that is the number of dmx addresses used by the device.
     uint16_t getFootprint();
 
-    // Register a device-specific implemented function for RDM callbacks
+    /// Register a device-specific implemented function for RDM callbacks
     void    attachRDMCallback (RDMCallbackFunction newFunction);
 
-    // Register a device-specific implemented function for getting sensor values
+    /// Register a device-specific implemented function for getting sensor values
     void    attachSensorCallback (RDMGetSensorValue newFunction);
 
-    // check for unprocessed RDM Command.
+    /// check for unprocessed RDM Command.
     void    tick(void);
 
-    // Terminate operation.
+    /// Terminate operation.
     void    term(void);
     
-    // A short custom label given to the device. 
+    /// A short custom label given to the device. 
     char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH];
 
-    // don't use that method from extern.
+    /// don't use that method from extern.
     void _processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 isHandled);
 
-    // save all data to EEPROM
-	void _saveEEPRom();
+    /// save all data to EEPROM
+    void _saveEEPRom();
+  
   private:
-    // process a relevant message
+    /// process a relevant message
     void _processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 isHandled, bool8 doRespond);
   
-    // common internal initialization function.
+    /// common internal initialization function.
     void _baseInit();
 
-    // callback function to device specific code
+    /// callback function to device specific code
     RDMCallbackFunction _rdmFunc;
 
-    // callback function to get sensor value
+    /// callback function to get sensor value
     RDMGetSensorValue _sensorFunc;
 
-    // remember the given manufacturer label and device model strings during init
+    /// remember the given manufacturer label and device model strings during init
     struct RDMINIT *_initData;
 
-    // intern parameter settings
+    /// intern parameter settings
     const char *_softwareLabel;
     bool8  _identifyMode;
     uint16_t _startAddress;
