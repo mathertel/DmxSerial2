@@ -32,8 +32,8 @@ matrix:
            - moreutils
 
 install:
-  - if [[ "$TASK" != "codespell" ]]; then pip install --user platformio; fi
-  - if [[ "$TASK" == "codespell" ]]; then pip install --user git+https://github.com/codespell-project/codespell.git; fi
+  - if [[ "$TASK" != "codespell" ]]; then pip install --upgrade platformio; fi
+  - if [[ "$TASK" == "codespell" ]]; then pip install --upgrade git+https://github.com/codespell-project/codespell.git; fi
 
 script:
   - "bash -ex .travis-ci.sh"
