@@ -12,7 +12,7 @@
 // address (startAddress) + 1 (green) -> PWM Port 6
 // address (startAddress) + 2 (blue) -> PWM Port 5
 //
-// Ths sample shows how Device specific RDM Commands are handled in the processCommand function.
+// This sample shows how Device specific RDM Commands are handled in the processCommand function.
 // The following RDM commands are implemented here:
 // E120_LAMP_HOURS
 // E120_DEVICE_HOURS
@@ -72,7 +72,7 @@ void setup () {
 #if defined(SERIAL_DEBUG)
   // The Serial port can be used on Arduino Leonard Boards for debugging purpose
   // because it is not mapped to the real serial port of the ATmega32U4 chip but to the USB port.
-  // Dont't use that on Arduino Uno, 2009,... boards based on ATmega328 or ATmega168 chips.
+  // Don't use that on Arduino Uno, 2009,... boards based on ATmega328 or ATmega168 chips.
   Serial.begin(9600);       
   while (!Serial) ;
   Serial.println("starting...");
@@ -124,7 +124,7 @@ void loop() {
   unsigned long lastPacket = DMXSerial2.noDataSince();
 
   if (DMXSerial2.isIdentifyMode()) {
-    // RDM Command for Indentification was sent.
+    // RDM command for identification was sent.
     // Blink the device.
     unsigned long now = millis();
     if (now % 1000 < 500) {
