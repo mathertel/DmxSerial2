@@ -296,7 +296,7 @@
 #define E120_PRODUCT_DETAIL_METAL_HALIDE                  0x0002
 #define E120_PRODUCT_DETAIL_INCANDESCENT                  0x0003
 #define E120_PRODUCT_DETAIL_LED                           0x0004
-#define E120_PRODUCT_DETAIL_FLUROESCENT                   0x0005
+#define E120_PRODUCT_DETAIL_FLUORESCENT                   0x0005
 #define E120_PRODUCT_DETAIL_COLDCATHODE                   0x0006  /*includes Neon/Argon                                         */
 #define E120_PRODUCT_DETAIL_ELECTROLUMINESCENT            0x0007
 #define E120_PRODUCT_DETAIL_LASER                         0x0008
@@ -342,7 +342,7 @@
 #define E120_PRODUCT_DETAIL_SINE                          0x0402
 #define E120_PRODUCT_DETAIL_PWM                           0x0403
 #define E120_PRODUCT_DETAIL_DC                            0x0404 /* Variable voltage                                            */
-#define E120_PRODUCT_DETAIL_HFBALLAST                     0x0405 /* for Fluroescent                                             */
+#define E120_PRODUCT_DETAIL_HFBALLAST                     0x0405 /* for Fluorescent                                             */
 #define E120_PRODUCT_DETAIL_HFHV_NEONBALLAST              0x0406 /* for Neon/Argon and other coldcathode.                       */
 #define E120_PRODUCT_DETAIL_HFHV_EL                       0x0407 /* for Electroluminscent                                       */
 #define E120_PRODUCT_DETAIL_MHR_BALLAST                   0x0408 /* for Metal Halide                                            */
@@ -371,7 +371,7 @@
 #define E120_PRODUCT_DETAIL_WIRELESS_LINK                 0x0604 /* radio/infrared                                              */
 
 /* Generally applied to Data Conversion and Interfaces                                                                          */
-#define E120_PRODUCT_DETAIL_PROTOCOL_CONVERTOR            0x0701 /* D54/AMX192/Non DMX serial links, etc to/from DMX512         */
+#define E120_PRODUCT_DETAIL_PROTOCOL_CONVERTER            0x0701 /* D54/AMX192/Non DMX serial links, etc to/from DMX512         */
 #define E120_PRODUCT_DETAIL_ANALOG_DEMULTIPLEX            0x0702 /* DMX to DC voltage                                           */
 #define E120_PRODUCT_DETAIL_ANALOG_MULTIPLEX              0x0703 /* DC Voltage to DMX                                           */
 #define E120_PRODUCT_DETAIL_SWITCH_PANEL                  0x0704 /* Pushbuttons to DMX or polled using RDM                      */
@@ -515,7 +515,7 @@
 #define E120_UNITS_AMPERE_DC                             0x05   /* CURRENT	                                                    */
 #define E120_UNITS_AMPERE_AC_PEAK                        0x06   /* CURRENT	                                                    */
 #define E120_UNITS_AMPERE_AC_RMS                         0x07   /* CURRENT                                                      */
-#define E120_UNITS_HERTZ                                 0x08   /* FREQUENCY / ANG_VEL                                          */
+#define E120_UNITS_HERTZ                                 0x08   /* FREQUENCY / ANGULAR_VELOCITY                                 */
 #define E120_UNITS_OHM                                   0x09   /* RESISTANCE			                                        */
 #define E120_UNITS_WATT                                  0x0A   /* POWER					                                    */
 #define E120_UNITS_KILOGRAM                              0x0B   /* MASS                                                         */
@@ -551,7 +551,7 @@
 #define E120_PREFIX_MICRO                                0x04   /* Multiply by 10-6	                                            */
 #define E120_PREFIX_NANO                                 0x05   /* Multiply by 10-9	                                            */
 #define E120_PREFIX_PICO                                 0x06   /* Multiply by 10-12	                                        */
-#define E120_PREFIX_FEMPTO                               0x07   /* Multiply by 10-15	                                        */
+#define E120_PREFIX_FEMTO                                0x07   /* Multiply by 10-15	                                        */
 #define E120_PREFIX_ATTO                                 0x08   /* Multiply by 10-18	                                        */
 #define E120_PREFIX_ZEPTO                                0x09   /* Multiply by 10-21	                                        */
 #define E120_PREFIX_YOCTO                                0x0A   /* Multiply by 10-24	                                        */
@@ -634,7 +634,3 @@
 #define E137_1_MERGEMODE_LTP                             0x02 /* Latest Takes Precedence from Preset or DMX512 on slot by slot  */
 #define E137_1_MERGEMODE_DMX_ONLY                        0x03 /* DMX512 only, Preset ignored                                    */
 #define E137_1_MERGEMODE_OTHER                           0xFF /* Other (undefined) merge mode                                   */
-
-
-
-
