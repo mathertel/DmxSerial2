@@ -21,9 +21,19 @@ matrix:
     - env: BOARD=leonardo PLATFORMIO_CI_SRC=examples/RDMSerialRecv
     - env: BOARD=nanoatmega328 PLATFORMIO_CI_SRC=examples/RDMSerialRecv
     - env: BOARD=pro16MHzatmega328 PLATFORMIO_CI_SRC=examples/RDMSerialRecv
+    - os: linux
+      dist: trusty
+      # Short duration job, use the container/without sudo image as it boots faster
+      sudo: false
+      env: TASK='codespell'
+      addons:
+        apt:
+          packages:
+           - moreutils
 
 install:
-  - pip install -U platformio
+  - if [[ "$TASK" != "codespell" ]]; then pip install --upgrade platformio; fi
+  - if [[ "$TASK" == "codespell" ]]; then pip install --upgrade git+https://github.com/codespell-project/codespell.git; fi
 
 script:
-  - platformio ci --lib="." --board=$BOARD
+  - "bash -ex .travis-ci.sh"

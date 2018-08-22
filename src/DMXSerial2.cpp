@@ -41,7 +41,7 @@ void rgbDebug(byte r, byte g, byte b)
 } // rgbDebug()
 
 // TIMING:
-unsigned long _timingReceiveEnd; // when the last incomming byte was received
+unsigned long _timingReceiveEnd; // when the last incoming byte was received
 
 // ----- Constants -----
 
@@ -188,7 +188,7 @@ struct DISCOVERYMSG {
 }; // struct DISCOVERYMSG
 
 
-// The DEVICEINFO structure (length = 19) has to be responsed for E120_DEVICE_INFO
+// The DEVICEINFO structure (length = 19) has to be responded for E120_DEVICE_INFO
 // See http://rdm.openlighting.org/pid/display?manufacturer=0&pid=96
 struct DEVICEINFO {
   byte protocolMajor;
@@ -224,7 +224,7 @@ struct EEPROMVALUES {
 // I use the number 0x0987 that is registered with myself. 
 // For the other 4 bytes I use the date of creation: 0x2012 0x11 0x02
 // When the EEPROM values are valid, the _devID is taken from these values.
-// This allows software updates without loosing a specific device ID.
+// This allows software updates without losing a specific device ID.
 
 // It was an easy job to register a manufacturer id to myself as explained
 // on http://tsp.plasa.org/tsp/working_groups/CP/mfctrIDs.php. 
@@ -235,14 +235,14 @@ struct EEPROMVALUES {
 // and adjust the next line and the first two values in the array below that to use it:
 DEVICEID _devID = { 0x09, 0x87, 0x20, 0x12, 0x00, 0x00 };
 
-// The Device ID for adressing all devices of a manufacturer.
+// The Device ID for addressing all devices of a manufacturer.
 DEVICEID _devIDGroup = { 0x09, 0x87, 0xFF, 0xFF, 0xFF, 0xFF };
 
-// The Device ID for adressing all devices: 6 times 0xFF.
+// The Device ID for addressing all devices: 6 times 0xFF.
 DEVICEID _devIDAll = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
 
-// This is the buffer for RDM packets beeing received and sent.
+// This is the buffer for RDM packets being received and sent.
 // this structure is needed to RDM data separate from DMX data.
 union RDMMEM {
   // the most common RDM packet layout for commands
@@ -345,7 +345,7 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, R
     strcpy (deviceLabel, eeprom.deviceLabel);
     DeviceIDCpy(_devID, eeprom.deviceID);
 
-    // setup the manufacturer adressing device-ID
+    // setup the manufacturer addressing device-ID
     _devIDGroup[0] = _devID[0];
     _devIDGroup[1] = _devID[1];
     
@@ -428,7 +428,7 @@ void DMXSerialClass2::attachSensorCallback(RDMGetSensorValue newFunction)
   _sensorFunc = newFunction;
 } // attachSensorCallback
 
-// some functions to hide the internal variables from beeing changed
+// some functions to hide the internal variables from being changed
 
 unsigned long DMXSerialClass2::noDataSince() { return(millis() - _gotLastPacket);}
 bool8 DMXSerialClass2::isIdentifyMode() { return(_identifyMode); }
@@ -576,7 +576,7 @@ void DMXSerialClass2::term(void)
 // if returning (false) a NAK will be sent.
 // This method processes the commands/parameters regarding mute, DEviceInfo, devicelabel,
 // manufacturer label, DMX Start address.
-// When parameters are chenged by a SET command they are persisted into EEPROM.
+// When parameters are changed by a SET command they are persisted into EEPROM.
 // When doRespond is true, send an answer back to the controller node.
 void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 handled, bool8 doRespond)
 {
@@ -626,7 +626,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
       } else {
         // return all device info data 
-        DEVICEINFO *devInfo = (DEVICEINFO *)(_rdm.packet.Data); // The data has to be responsed in the Data buffer.
+        DEVICEINFO *devInfo = (DEVICEINFO *)(_rdm.packet.Data); // The data has to be responded in the Data buffer.
 
         devInfo->protocolMajor = 1;
         devInfo->protocolMinor = 0;
@@ -1000,7 +1000,7 @@ ISR(USARTn_RX_vect)
     // Low byte of RDM checksum -> subtract from checksum
     _rdmCheckSum -= DmxByte;
 
-    // now check some error conditions and adressing issues
+    // now check some error conditions and addressing issues
     if ((_rdmCheckSum == 0) && (_rdm.packet.SubStartCode == E120_SC_SUB_MESSAGE)) { // 0x01
       // prepare for answering when tick() is called
       _rdmAvailable = true;
