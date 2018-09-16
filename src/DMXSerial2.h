@@ -158,9 +158,9 @@ struct RDMSENSOR {
 }; // struct RDMSENSOR
 
 struct RDMINIT {
-  char          *manufacturerLabel; //
+  const char          *manufacturerLabel; //
   const uint16_t          deviceModelId;       //
-  char          *deviceModel;       //
+  const char          *deviceModel;       //
   uint16_t footprint;
   // uint16_t personalityCount;
   // RDMPERSONALITY *personalities;
