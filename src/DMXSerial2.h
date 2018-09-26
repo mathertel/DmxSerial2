@@ -40,6 +40,7 @@
 // 15.06.2015 On DMX lines sometimes a BREAK condition occurs in between RDM packets from the controller
 //            and the device response. Ignore that when no data has arrived.
 // 25.05.2017 Stefan Krupop: Add support for sensors
+// 21.08.2018 improvements and typo by Peter Newman
 // - - - - -
 
 #ifndef DmxSerial_h

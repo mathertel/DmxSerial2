@@ -28,6 +28,8 @@
 // 24.01.2014 Peter Newman/Sean Sill: Get device specific PIDs returning properly in supportedParameters
 // 24.01.2014 Peter Newman: Make the device specific PIDs compliant with the OLA RDM Tests. Add device model ID option
 // 12.04.2015 change of using datatype boolean to bool8.
+// 25.05.2017 Stefan Krupop: Add support for sensors
+// 21.08.2018 improvements and typo by Peter Newman
 // - - - - -
 
 #include <EEPROM.h>
