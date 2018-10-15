@@ -522,40 +522,39 @@ void DMXSerialClass2::tick(void)
 
         } else if (Parameter == SWAPINT(E120_DISC_UN_MUTE)) { // 0x0003
           isHandled = true;
-          if (packetIsForMe || packetIsForGroup || packetIsForAll) { // For us, process unmute
-            if (_rdm.packet.DataLength > 0) {
-              // Unexpected data
-              // Do nothing
-            } else {
-              _isMute = false;
+//          if (packetIsForMe || packetIsForGroup || packetIsForAll) { // For us, process unmute
+          if (_rdm.packet.DataLength > 0) {
+            // Unexpected data
+            // Do nothing
+          } else {
+            _isMute = false;
+            if (packetIsForMe) { // Only actually respond if it's sent direct to us
               // Control field
               _rdm.packet.Data[0] = 0b00000000;
               _rdm.packet.Data[1] = 0b00000000;
               _rdm.packet.DataLength = 2;
-              if (packetIsForMe) { // Only actually respond if it's sent direct to us
-                respondMessage(true); // 21.11.2013
-              }
+              respondMessage(true); // 21.11.2013
             }
           }
+//          }
           
         } else if (Parameter == SWAPINT(E120_DISC_MUTE)) { // 0x0002
           isHandled = true;
-          if (packetIsForMe || packetIsForGroup || packetIsForAll) { // For us, process unmute
-            if (_rdm.packet.DataLength > 0) {
-              // Unexpected data
-              // Do nothing
-            } else {
-              _isMute = true;
+//          if (packetIsForMe || packetIsForGroup || packetIsForAll) { // For us, process unmute
+          if (_rdm.packet.DataLength > 0) {
+            // Unexpected data
+            // Do nothing
+          } else {
+            _isMute = true;
+            if (packetIsForMe) { // Only actually respond if it's sent direct to us
               // Control field
               _rdm.packet.Data[0] = 0b00000000;
               _rdm.packet.Data[1] = 0b00000000;
               _rdm.packet.DataLength = 2;
-              if (packetIsForMe) { // Only actually respond if it's sent direct to us
-                respondMessage(true); // 21.11.2013
-              }
+              respondMessage(true); // 21.11.2013
             }
           }
-
+          
         } // if
 
       } else {
