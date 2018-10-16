@@ -522,7 +522,6 @@ void DMXSerialClass2::tick(void)
 
         } else if (Parameter == SWAPINT(E120_DISC_UN_MUTE)) { // 0x0003
           isHandled = true;
-//          if (packetIsForMe || packetIsForGroup || packetIsForAll) { // For us, process unmute
           if (_rdm.packet.DataLength > 0) {
             // Unexpected data
             // Do nothing
@@ -536,11 +535,9 @@ void DMXSerialClass2::tick(void)
               respondMessage(true); // 21.11.2013
             }
           }
-//          }
-          
+
         } else if (Parameter == SWAPINT(E120_DISC_MUTE)) { // 0x0002
           isHandled = true;
-//          if (packetIsForMe || packetIsForGroup || packetIsForAll) { // For us, process unmute
           if (_rdm.packet.DataLength > 0) {
             // Unexpected data
             // Do nothing
@@ -554,7 +551,6 @@ void DMXSerialClass2::tick(void)
               respondMessage(true); // 21.11.2013
             }
           }
-          
         } // if
 
       } else {
