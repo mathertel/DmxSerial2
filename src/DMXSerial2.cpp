@@ -142,11 +142,22 @@ unsigned long _timingReceiveEnd; // when the last incoming byte was received
 #endif
 
 
-// formats for serial transmission, already defined in "Arduino.h"->"HardwareSerial.h"
-#define SERIAL_8N1  ((0<<USBSn) | (0<<UPMn0) | (3<<UCSZn0))
+// The formats for serial transmission, already defined in `Arduino.h` -> `HardwareSerial.h`
+// We do not include `HardwareSerial.h` but home it's still there in future version.
+// If not, here are the required values:
+
+#ifndef SERIAL_8N2
 #define SERIAL_8N2  ((1<<USBSn) | (0<<UPMn0) | (3<<UCSZn0))
+#endif
+
+#ifndef SERIAL_8E1
 #define SERIAL_8E1  ((0<<USBSn) | (2<<UPMn0) | (3<<UCSZn0))
-#define SERIAL_8E2  ((1<<USBSn) | (2<<UPMn0) | (3<<UCSZn0))
+#endif
+
+// not needed by DMXSerial2:
+// #define SERIAL_8N1  ((0<<USBSn) | (0<<UPMn0) | (3<<UCSZn0))
+// #define SERIAL_8E2  ((1<<USBSn) | (2<<UPMn0) | (3<<UCSZn0))
+
 
 // the break timing is 10 bits (start + 8 data + parity) of this speed
 // the mark-after-break is 1 bit of this speed plus approx 6 usec
