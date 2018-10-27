@@ -419,8 +419,11 @@ void DMXSerialClass2::write(int channel, uint8_t value)
   // adjust parameters
   if (channel < 1) channel = 1;
   if (channel > DMXSERIAL_MAX) channel = DMXSERIAL_MAX;
-  if (value < DMXSERIAL_MIN_SLOT_VALUE) value = DMXSERIAL_MIN_SLOT_VALUE;
-  if (value > DMXSERIAL_MAX_SLOT_VALUE) value = DMXSERIAL_MAX_SLOT_VALUE;
+
+  // The next 2 comparisations have no effect because uint8_t covers exact this range. -> removed
+  // When changing DMXSERIAL_MAX_SLOT_VALUE or _dmxData space allocation, check again.
+  // if (value < DMXSERIAL_MIN_SLOT_VALUE) value = DMXSERIAL_MIN_SLOT_VALUE;
+  // if (value > DMXSERIAL_MAX_SLOT_VALUE) value = DMXSERIAL_MAX_SLOT_VALUE;
 
   // store value for later sending
   _dmxData[channel] = value;
