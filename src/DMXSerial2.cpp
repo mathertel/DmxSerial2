@@ -403,8 +403,8 @@ void DMXSerialClass2::getDeviceID (DEVICEID id) {
 uint8_t DMXSerialClass2::readRelative(unsigned int channel)
 {
   uint8_t val = 0;
-  if ((channel >= 0) && (channel < _initData->footprint)) {
-    // in range !
+  if (channel < _initData->footprint) {
+    // channel is in a valid range! (channel >= 0) is assumed by (unsigned int) type. 
     val = _dmxData[_startAddress + channel];
   } // if
   return(val);
