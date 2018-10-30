@@ -788,7 +788,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             WRITEINT(_rdm.packet.Data+ 6, E120_SENSOR_DEFINITION);
             WRITEINT(_rdm.packet.Data+ 8, E120_SENSOR_VALUE);
           }
-          for (int n = 0; n < _initData->additionalCommandsLength; n++) {
+          for (uint16_t n = 0; n < _initData->additionalCommandsLength; n++) {
             WRITEINT(_rdm.packet.Data+offset+n+n, _initData->additionalCommands[n]);
           }
           handled = true;
