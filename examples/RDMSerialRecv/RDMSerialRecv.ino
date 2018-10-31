@@ -30,9 +30,9 @@
 // 12.04.2015 change of using datatype boolean to bool8.
 // 25.05.2017 Stefan Krupop: Add support for sensors
 // 21.08.2018 improvements and typo by Peter Newman
+// 31.10.2018 Remove unnecessary #include <EEPROM.h> by Graham Hanson
 // - - - - -
 
-#include <EEPROM.h>
 #include <DMXSerial2.h>
 
 // uncomment this line for enabling information on a LEONARD board. 
