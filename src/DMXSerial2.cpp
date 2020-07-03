@@ -444,7 +444,14 @@ void DMXSerialClass2::attachSensorCallback(RDMGetSensorValue newFunction)
 
 // some functions to hide the internal variables from being changed
 
-unsigned long DMXSerialClass2::noDataSince() { return(millis() - _gotLastPacket);}
+unsigned long DMXSerialClass2::noDataSince() { 
+  /* Make sure we don't load partial updates of this multi-byte value */
+  noInterrupts();
+  unsigned long lastPacket = _gotLastPacket;
+  interrupts();
+  return(millis() - lastPacket);
+}
+
 bool8 DMXSerialClass2::isIdentifyMode() { return(_identifyMode); }
 uint16_t DMXSerialClass2::getStartAddress() { return(_startAddress); }
 uint16_t DMXSerialClass2::getFootprint() { return(_initData->footprint); }
