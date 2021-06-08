@@ -1,3 +1,5 @@
+os: linux
+dist: bionic
 language: python
 python:
   - "3.9"
@@ -14,8 +16,8 @@ cache:
 matrix:
   fast_finish: true
   include:
-    - env: BOARD=teensy20 PLATFORMIO_CI_SRC=examples/RDMSerialRecv
-    - env: BOARD=teensy20pp PLATFORMIO_CI_SRC=examples/RDMSerialRecv
+    - env: BOARD=teensy2 PLATFORMIO_CI_SRC=examples/RDMSerialRecv
+    - env: BOARD=teensy2pp PLATFORMIO_CI_SRC=examples/RDMSerialRecv
     - env: BOARD=uno PLATFORMIO_CI_SRC=examples/RDMSerialRecv
     - env: BOARD=diecimilaatmega328 PLATFORMIO_CI_SRC=examples/RDMSerialRecv
     - env: BOARD=leonardo PLATFORMIO_CI_SRC=examples/RDMSerialRecv
