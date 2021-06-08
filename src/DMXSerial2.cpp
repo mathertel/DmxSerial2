@@ -7,9 +7,10 @@
 //
 // Documentation and samples are available at http://www.mathertel.de/Arduino
 //
-// IMPORTANT NOTE: Even when I name by implementation RDM, it is not a full compliant RDM
-// implementation. Right now it is only a experimental version with regards of the published second hand
-// information about RDM available on the internet for free. (see links inside the code)
+// IMPORTANT NOTE: Even when I name by implementation RDM, it is not guaranteed as a fully
+// compliant RDM implementation. Right now it is only a experimental version with regards
+// to the published information about RDM available on the internet. (see links inside the
+// code)
 //
 // History:
 // see DMXSerial2.h
