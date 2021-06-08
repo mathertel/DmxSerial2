@@ -40,27 +40,29 @@ jobs:
           - fqbn: arduino:avr:leonardo
             platforms: |
               - name: arduino:avr
-          - fqbn: arduino:megaavr:nona4809
-            platforms: |
-              - name: arduino:megaavr
-          - fqbn: arduino:sam:arduino_due_x_dbg
-            platforms: |
-              - name: arduino:sam
-          - fqbn: arduino:samd:mkrzero
-            platforms: |
-              - name: arduino:samd
-          - fqbn: arduino:mbed_portenta:envie_m4
-            platforms: |
-              - name: arduino:mbed_portenta
-          - fqbn: arduino:mbed_portenta:envie_m7
-            platforms: |
-              - name: arduino:mbed_portenta
-          - fqbn: arduino:mbed_nano:nano33ble
-            platforms: |
-              - name: arduino:mbed_nano
-          - fqbn: arduino:mbed_nano:nanorp2040connect
-            platforms: |
-              - name: arduino:mbed_nano
+          # No serial port/incorrect serial config
+          #- fqbn: arduino:megaavr:nona4809
+          #  platforms: |
+          #    - name: arduino:megaavr
+          # No EEPROM library in all the below
+          #- fqbn: arduino:sam:arduino_due_x_dbg
+          #  platforms: |
+          #    - name: arduino:sam
+          #- fqbn: arduino:samd:mkrzero
+          #  platforms: |
+          #    - name: arduino:samd
+          #- fqbn: arduino:mbed_portenta:envie_m4
+          #  platforms: |
+          #    - name: arduino:mbed_portenta
+          #- fqbn: arduino:mbed_portenta:envie_m7
+          #  platforms: |
+          #    - name: arduino:mbed_portenta
+          #- fqbn: arduino:mbed_nano:nano33ble
+          #  platforms: |
+          #    - name: arduino:mbed_nano
+          #- fqbn: arduino:mbed_nano:nanorp2040connect
+          #  platforms: |
+          #    - name: arduino:mbed_nano
 
     steps:
       - name: Checkout repository
