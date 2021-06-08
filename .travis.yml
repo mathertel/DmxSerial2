@@ -1,6 +1,6 @@
 language: python
 python:
-  - "2.7"
+  - "3.9"
 
 # Short duration job, use the container/without sudo image as it boots faster
 sudo: false
@@ -22,7 +22,7 @@ matrix:
     - env: BOARD=nanoatmega328 PLATFORMIO_CI_SRC=examples/RDMSerialRecv
     - env: BOARD=pro16MHzatmega328 PLATFORMIO_CI_SRC=examples/RDMSerialRecv
     - os: linux
-      dist: trusty
+      dist: bionic
       # Short duration job, use the container/without sudo image as it boots faster
       sudo: false
       env: TASK='codespell'
