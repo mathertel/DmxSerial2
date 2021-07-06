@@ -234,10 +234,10 @@ class DMXSerialClass2
     /// Returns the Device ID. Copies the UID to the buffer passed through the uid argument.
     void getDeviceID(DEVICEID id);
 
-    /// Return the current DMX start address that is the first dmx address used by the device.
+    /// Return the current DMX start address that is the first DMX address used by the device.
     uint16_t getStartAddress();
 
-    /// Return the current DMX footprint, that is the number of dmx addresses used by the device.
+    /// Return the current DMX footprint, that is the number of DMX addresses used by the device.
     uint16_t getFootprint();
 
     /// Register a device-specific implemented function for RDM callbacks
