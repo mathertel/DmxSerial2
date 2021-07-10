@@ -32,7 +32,7 @@ jobs:
           library-manager: update
           verbose: false
 
-  # These jobs are used to compile the examples fot the specific processor/board.
+  # These jobs are used to compile the examples for the specific processor/board.
   # see <https://github.com/marketplace/actions/compile-arduino-sketches>
   compile-uno:
     name: compile uno examples

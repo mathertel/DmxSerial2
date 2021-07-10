@@ -142,7 +142,7 @@ extern "C" {
 
 struct RDMPERSONALITY {
   uint16_t footprint;
-  // maybe more here... when supporting more personalitites.
+  // maybe more here... when supporting more personalities.
 }; // struct RDMPERSONALITY
 
 struct RDMSENSOR {
