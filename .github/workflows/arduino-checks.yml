@@ -13,6 +13,10 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+  schedule:
+    # Run every Tuesday at 6 AM UTC to catch breakage caused by new rules added to Arduino Lint or changes in the tools.
+    - cron: "0 6 * * TUE"
+
 jobs:
 
   # This defines a job for checking the Arduino library format specifications
@@ -29,6 +33,7 @@ jobs:
       - name: Arduino-lint
         uses: arduino/arduino-lint-action@v1
         with:
+          compliance: strict
           library-manager: update
           verbose: false
 
