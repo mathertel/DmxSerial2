@@ -1,10 +1,10 @@
 // - - - - -
 // DMXSerial2 - A hardware supported interface to DMX and RDM.
 // DMXSerial2.h: Library header file
-// 
+//
 // Copyright (c) 2011-2013 by Matthias Hertel, http://www.mathertel.de
 // This work is licensed under a BSD style license. See http://www.mathertel.de/License.aspx
-// 
+//
 // Documentation and samples are available at http://www.mathertel.de/Arduino
 // 25.07.2011 creation of the DMXSerial library.
 // 10.09.2011 fully control the serial hardware register
@@ -65,8 +65,8 @@ typedef uint8_t byte;
 
 /**
  * @brief Type definition for a unique DEVICE ID.
- * 
- * DEVICEID[0..1] contains a ESTA Manufacturer ID. 
+ *
+ * DEVICEID[0..1] contains a ESTA Manufacturer ID.
  * DEVICEID[2..5] contains a unique number per device.
  */
 typedef byte DEVICEID[6];
@@ -76,7 +76,7 @@ typedef byte DEVICEID[6];
 
 /**
  * @brief The RDMDATA structure defines the RDM network packages.
- * 
+ *
  * This structure has the size of (24+data) and is used by all GET/SET RDM commands.
  * The maximum permitted data length according to the spec is 231 bytes.
  */
@@ -91,7 +91,7 @@ struct RDMDATA {
   byte     _TransNo;     // transaction number, not checked
   byte     ResponseType;    // ResponseType
   byte     _unknown;     // I don't know, ignore this
-  uint16_t SubDev;      // sub device number (root = 0) 
+  uint16_t SubDev;      // sub device number (root = 0)
   byte     CmdClass;     // command class
   uint16_t Parameter;	   // parameter ID
   byte     DataLength;   // parameter data length in bytes
@@ -122,15 +122,15 @@ struct RDMDATA {
 
 extern "C" {
   /**
-   * @brief Callback function for RDM functions. 
-   * 
+   * @brief Callback function for RDM functions.
+   *
    * @param [in,out] buffer Buffer containing the RDM network package.
    * @param [in,out] nackReason on error a RDM Response NACK Reason Code.
    */
   typedef bool8 (*RDMCallbackFunction)(struct RDMDATA *buffer, uint16_t *nackReason);
 
   /**
-   * @brief Callback function for RDM sensors. 
+   * @brief Callback function for RDM sensors.
    */
   typedef bool8 (*RDMGetSensorValue)(uint8_t sensorNr, int16_t *value, int16_t *lowestValue, int16_t *highestValue, int16_t *recordedValue);
 }
@@ -154,7 +154,7 @@ struct RDMSENSOR {
   int16_t normalMin;
   int16_t normalMax;
   bool8 lowHighSupported;
-  bool8 recordedSupported;  
+  bool8 recordedSupported;
   char *description;
 }; // struct RDMSENSOR
 
@@ -198,7 +198,7 @@ class DMXSerialClass2
      * @param [in] modeOut The level for outbound communication. This parameter is optiona and defaults to 1 = HIGH.
      */
     void    init (struct RDMINIT *initData, RDMCallbackFunction func, RDMGetSensorValue sensorFunc, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1);
-    
+
     /**
      * @brief Read the current value of a channel.
      * @param [in] channel The channel number.
@@ -227,7 +227,7 @@ class DMXSerialClass2
     unsigned long noDataSince();
 
     // ----- RDM specific members -----
-    
+
     /// Return true when identify mode was set on by controller.
     bool8 isIdentifyMode();
 
@@ -251,8 +251,8 @@ class DMXSerialClass2
 
     /// Terminate operation.
     void    term(void);
-    
-    /// A short custom label given to the device. 
+
+    /// A short custom label given to the device.
     char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH];
 
     /// don't use that method from extern.
@@ -260,11 +260,11 @@ class DMXSerialClass2
 
     /// save all data to EEPROM
     void _saveEEPRom();
-  
+
   private:
     /// process a relevant message
     void _processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 isHandled, bool8 doRespond);
-  
+
     /// common internal initialization function.
     void _baseInit();
 
