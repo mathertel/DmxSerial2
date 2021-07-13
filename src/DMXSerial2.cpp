@@ -222,7 +222,7 @@ struct EEPROMVALUES {
   byte sig1; // 0x6D  signature 1, EPROM values are valid of both signatures match.
   byte sig2; // 0x68  signature 2
   uint16_t startAddress; // the DMX start address can be changed by a RDM command.
-  char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH]; // the device Label can be changed by a RDM command.
+  char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH]; // the device Label can be changed by a RDM command. Don't store the null in the EPROM for backwards compatibility.
   DEVICEID deviceID;    // store the device ID to allow easy software updates.
 }; // struct EEPROMVALUES
 
@@ -354,7 +354,8 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, R
   // check if the EEEPROM values are from the RDM library
   if ((eeprom.sig1 == 0x6D) && (eeprom.sig2 == 0x68)) {
     _startAddress = eeprom.startAddress;
-    strcpy (deviceLabel, eeprom.deviceLabel);
+    // Restricting this to 32 characters or the length, whichever is shorter
+    strncpy(deviceLabel, eeprom.deviceLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
     DeviceIDCpy(_devID, eeprom.deviceID);
 
     // setup the manufacturer addressing device-ID
@@ -364,7 +365,7 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, R
   } else {
     // set default values
     _startAddress = 1;
-    strcpy (deviceLabel, "new");
+    strncpy(deviceLabel, "new", DMXSERIAL_MAX_RDM_STRING_LENGTH);
     _devID[4] = random255(); // random(255);
     _devID[5] = random255(); // random(255);
   } // if
@@ -500,7 +501,7 @@ void DMXSerialClass2::tick(void)
             // check if my _devID is in the discovery range
             if ((DeviceIDCmp(rdm->Data, _devID) <= 0) && (DeviceIDCmp(_devID, rdm->Data+6) <= 0)) {
 
-              // respond a special discovery message !
+              // respond with a special discovery message !
               struct DISCOVERYMSG *disc = &_rdm.discovery;
               _rdmCheckSum = 6 * 0xFF;
 
@@ -595,7 +596,7 @@ void DMXSerialClass2::term(void)
 
 // Process the RDM Command Message by changing the _rdm buffer and returning (true).
 // if returning (false) a NAK will be sent.
-// This method processes the commands/parameters regarding mute, DEviceInfo, devicelabel,
+// This method processes the commands/parameters regarding mute, DeviceInfo, devicelabel,
 // manufacturer label, DMX Start address.
 // When parameters are changed by a SET command they are persisted into EEPROM.
 // When doRespond is true, send an answer back to the controller node.
@@ -675,6 +676,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
       } else {
         // return the manufacturer label
         _rdm.packet.DataLength = strlen(_initData->manufacturerLabel);
+        _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
         memcpy(_rdm.packet.Data, _initData->manufacturerLabel, _rdm.packet.DataLength);
         handled = true;
       }
@@ -689,6 +691,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
       } else {
         // return the DEVICE MODEL DESCRIPTION
         _rdm.packet.DataLength = strlen(_initData->deviceModel);
+        _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
         memcpy(_rdm.packet.Data, _initData->deviceModel, _rdm.packet.DataLength);
         handled = true;
       }
@@ -700,7 +703,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           nackReason = E120_NR_FORMAT_ERROR;
         } else {
           memcpy(deviceLabel, _rdm.packet.Data, _rdm.packet.DataLength);
-          deviceLabel[_rdm.packet.DataLength] = '\0';
+          deviceLabel[min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH)] = '\0';
           _rdm.packet.DataLength = 0;
           // persist in EEPROM
           _saveEEPRom();
@@ -715,6 +718,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           _rdm.packet.DataLength = strlen(deviceLabel);
+          _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
           memcpy(_rdm.packet.Data, deviceLabel, _rdm.packet.DataLength);
           handled = true;
         }
@@ -730,6 +734,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
       } else {
         // return the SOFTWARE_VERSION_LABEL
         _rdm.packet.DataLength = strlen(_softwareLabel);
+        _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
         memcpy(_rdm.packet.Data, _softwareLabel, _rdm.packet.DataLength);
         handled = true;
       }
@@ -822,7 +827,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             // Out of range sensor
             nackReason = E120_NR_DATA_OUT_OF_RANGE;
           } else {
-            _rdm.packet.DataLength = 13 + strlen(_initData->sensors[sensorNr].description);
+            _rdm.packet.DataLength = strlen(_initData->sensors[sensorNr].description);
+            _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+            _rdm.packet.DataLength = 13 + _rdm.packet.DataLength;
             _rdm.packet.Data[0] = sensorNr;
             _rdm.packet.Data[1] = _initData->sensors[sensorNr].type;
             _rdm.packet.Data[2] = _initData->sensors[sensorNr].unit;
@@ -922,12 +929,13 @@ void DMXSerialClass2::_saveEEPRom()
   eeprom.sig1 = 0x6D;
   eeprom.sig2 = 0x68;
   eeprom.startAddress = _startAddress;
-  strcpy (eeprom.deviceLabel, deviceLabel);
+  // This needs restricting to 32 chars (potentially no null), for backwards compatibility
+  strncpy(eeprom.deviceLabel, deviceLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
   DeviceIDCpy(eeprom.deviceID, _devID);
 
   for (unsigned int i = 0; i < sizeof(eeprom); i++) {
-    if (((byte *)(&eeprom))[i] != EEPROM.read(i))
-      EEPROM.write(i, ((byte *)(&eeprom))[i]);
+    // EEPROM.update does a read/write check and only writes on a change
+    EEPROM.update(i, ((byte *)(&eeprom))[i]);
   } // for
 } // _saveEEPRom
 

@@ -252,8 +252,8 @@ class DMXSerialClass2
     /// Terminate operation.
     void    term(void);
 
-    /// A short custom label given to the device.
-    char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH];
+    /// A short custom label given to the device. Add an extra char for a null.
+    char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH + 1];
 
     /// don't use that method from extern.
     void _processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 isHandled);
