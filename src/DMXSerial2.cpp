@@ -721,7 +721,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           deviceLabel[min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH)] = '\0';
           _rdm.packet.DataLength = 0;
           // persist in EEPROM
-          //_saveEEPRom();
+          _saveEEPRom();
           handled = true;
         }
       } else if (CmdClass == E120_GET_COMMAND) {
