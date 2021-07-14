@@ -90,7 +90,7 @@ struct RDMDATA {
 
   byte     _TransNo;     // transaction number, not checked
   byte     ResponseType;    // ResponseType
-  byte     _unknown;     // I don't know, ignore this
+  byte     _MessageCount;     // not used unless we support queued messages
   uint16_t SubDev;      // sub device number (root = 0)
   byte     CmdClass;     // command class
   uint16_t Parameter;	   // parameter ID
