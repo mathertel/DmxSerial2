@@ -681,8 +681,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           // return the manufacturer label
-          _rdm.packet.DataLength = strlen(_initData->manufacturerLabel);
-          _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+          _rdm.packet.DataLength = strnlen(_initData->manufacturerLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
           memcpy(_rdm.packet.Data, _initData->manufacturerLabel, _rdm.packet.DataLength);
           handled = true;
         }
@@ -701,8 +700,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           // return the DEVICE MODEL DESCRIPTION
-          _rdm.packet.DataLength = strlen(_initData->deviceModel);
-          _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+          _rdm.packet.DataLength = strnlen(_initData->deviceModel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
           memcpy(_rdm.packet.Data, _initData->deviceModel, _rdm.packet.DataLength);
           handled = true;
         }
@@ -732,8 +730,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           // No sub-devices supported
           nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
-          _rdm.packet.DataLength = strlen(deviceLabel);
-          _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+          _rdm.packet.DataLength = strnlen(deviceLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
           memcpy(_rdm.packet.Data, deviceLabel, _rdm.packet.DataLength);
           handled = true;
         }
@@ -749,8 +746,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           // return the SOFTWARE_VERSION_LABEL
-          _rdm.packet.DataLength = strlen(_softwareLabel);
-          _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+          _rdm.packet.DataLength = strnlen(_softwareLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
           memcpy(_rdm.packet.Data, _softwareLabel, _rdm.packet.DataLength);
           handled = true;
         }
@@ -847,9 +843,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             // Out of range sensor
             nackReason = E120_NR_DATA_OUT_OF_RANGE;
           } else {
-            _rdm.packet.DataLength = strlen(_initData->sensors[sensorNr].description);
-            _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
-            _rdm.packet.DataLength = 13 + _rdm.packet.DataLength;
+            _rdm.packet.DataLength = 13 + strnlen(_initData->sensors[sensorNr].description, DMXSERIAL_MAX_RDM_STRING_LENGTH);
             _rdm.packet.Data[0] = sensorNr;
             _rdm.packet.Data[1] = _initData->sensors[sensorNr].type;
             _rdm.packet.Data[2] = _initData->sensors[sensorNr].unit;
