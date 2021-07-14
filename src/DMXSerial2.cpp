@@ -255,7 +255,7 @@ DEVICEID _devIDAll = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
 
 // This is the buffer for RDM packets being received and sent.
-// this structure is needed to RDM data separate from DMX data.
+// This structure is needed to separate RDM data from DMX data.
 union RDMMEM {
   // the most common RDM packet layout for commands
   struct RDMDATA packet;
@@ -264,9 +264,11 @@ union RDMMEM {
   struct DISCOVERYMSG discovery;
 
   // the byte array used while receiving and sending.
-  byte buffer[60];
+  // This is the max size of any RDM packet and it's max PDL, to allow an
+  // aribitrary length packet to be received. Thanks to the union it doesn't
+  // need any more memory
+  byte buffer[sizeof(packet)];
 } _rdm; // union RDMMEM
-
 
 // This flag will be set when a full RDM packet was received.
 bool8 _rdmAvailable;
