@@ -224,6 +224,7 @@ struct EEPROMVALUES {
   uint16_t startAddress; // the DMX start address can be changed by a RDM command.
   char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH]; // the device Label can be changed by a RDM command. Don't store the null in the EPROM for backwards compatibility.
   DEVICEID deviceID;    // store the device ID to allow easy software updates.
+  uint16_t personalityNumber; // the DMX personality can be changed by a RDM command.
 }; // struct EEPROMVALUES
 
 
@@ -341,6 +342,13 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, R
 
   _baseInit();
 
+  // Sanity check/fix the defaultPersonalityNumber
+  if ((_initData->defaultPersonalityNumber < DMXSERIAL_MIN_PERSONALITY_VALUE) || (_initData->defaultPersonalityNumber > min(_initData->personalityCount, DMXSERIAL_MAX_PERSONALITY_VALUE))) {
+    #warning "Invalid default personality number in RDMINIT"
+    _initData->defaultPersonalityNumber = DMXSERIAL_MIN_PERSONALITY_VALUE;
+  }
+
+
   // now initialize RDM specific elements
   _isMute = false;
   _rdmAvailable = false;
@@ -354,6 +362,11 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, R
   // check if the EEEPROM values are from the RDM library
   if ((eeprom.sig1 == 0x6D) && (eeprom.sig2 == 0x68)) {
     _startAddress = eeprom.startAddress;
+    if ((eeprom.personalityNumber < DMXSERIAL_MIN_PERSONALITY_VALUE) || (eeprom.personalityNumber > min(_initData->personalityCount, DMXSERIAL_MAX_PERSONALITY_VALUE))) {
+      _personalityNumber = _initData->defaultPersonalityNumber;
+    } else {
+      _personalityNumber = eeprom.personalityNumber;
+    }
     // Restricting this to 32 characters or the length, whichever is shorter
     strncpy(deviceLabel, eeprom.deviceLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
     DeviceIDCpy(_devID, eeprom.deviceID);
@@ -365,6 +378,7 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, R
   } else {
     // set default values
     _startAddress = 1;
+    _personalityNumber = _initData->defaultPersonalityNumber;
     strncpy(deviceLabel, "new", DMXSERIAL_MAX_RDM_STRING_LENGTH);
     _devID[4] = random255(); // random(255);
     _devID[5] = random255(); // random(255);
@@ -405,7 +419,7 @@ void DMXSerialClass2::getDeviceID (DEVICEID id) {
 uint8_t DMXSerialClass2::readRelative(unsigned int channel)
 {
   uint8_t val = 0;
-  if (channel < _initData->footprint) {
+  if (channel < getFootprint()) {
     // channel is in a valid range! (channel >= 0) is assumed by (unsigned int) type.
     val = _dmxData[_startAddress + channel];
   } // if
@@ -456,7 +470,16 @@ unsigned long DMXSerialClass2::noDataSince() {
 
 bool8 DMXSerialClass2::isIdentifyMode() { return(_identifyMode); }
 uint16_t DMXSerialClass2::getStartAddress() { return(_startAddress); }
-uint16_t DMXSerialClass2::getFootprint() { return(_initData->footprint); }
+uint16_t DMXSerialClass2::getFootprint()
+{
+  if ((_personalityNumber >= DMXSERIAL_MIN_PERSONALITY_VALUE) && (_personalityNumber <= min(_initData->personalityCount, DMXSERIAL_MAX_PERSONALITY_VALUE))) {
+    // Personalities are 1 based, but our array is zero based
+    return(_initData->personalities[_personalityNumber - 1].footprint);
+  } else {
+    return(0);
+  }
+}
+uint8_t DMXSerialClass2::getPersonalityNumber() { return(_personalityNumber); }
 
 
 // Handle RDM Requests and send response
@@ -617,6 +640,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         if (_rdm.packet.DataLength != 1) {
           // Oversized data
           nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else if ((_rdm.packet.Data[0] != 0) && (_rdm.packet.Data[0] != 1)) {
           // Out of range data
           nackReason = E120_NR_DATA_OUT_OF_RANGE;
@@ -656,14 +682,23 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           devInfo->deviceModel = SWAPINT(_initData->deviceModelId);
           devInfo->productCategory = SWAPINT(E120_PRODUCT_CATEGORY_DIMMER_CS_LED);
           devInfo->softwareVersion = SWAPINT32(0x01000000);// 0x04020900;
-          devInfo->footprint = SWAPINT(_initData->footprint);
-          devInfo->currentPersonality = 1;
-          devInfo->personalityCount = 1;
+          devInfo->footprint = SWAPINT(getFootprint());
+          if (_initData->personalityCount > 0) {
+            devInfo->currentPersonality = _personalityNumber;
+            devInfo->personalityCount = _initData->personalityCount;
+          } else {
+            // No personalities so just set both to 1
+            devInfo->currentPersonality = 1;
+            devInfo->personalityCount = 1;
+          }
           devInfo->startAddress = SWAPINT(_startAddress);
+          if (devInfo->footprint == 0) {
+            devInfo->startAddress = SWAPINT(DMXSERIAL_ZERO_FOOTPRINT_DMX_ADDRESS);
+          }
           devInfo->subDeviceCount = 0;
           devInfo->sensorCount = _initData->sensorsLength;
 
-           _rdm.packet.DataLength = sizeof(DEVICEINFO);
+          _rdm.packet.DataLength = sizeof(DEVICEINFO);
           handled = true;
         }
       } else if (CmdClass == E120_SET_COMMAND) {
@@ -716,6 +751,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         if (_rdm.packet.DataLength > DMXSERIAL_MAX_RDM_STRING_LENGTH) {
           // Oversized data
           nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           memcpy(deviceLabel, _rdm.packet.Data, _rdm.packet.DataLength);
           deviceLabel[min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH)] = '\0';
@@ -761,9 +799,15 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
 
     } else if (Parameter == SWAPINT(E120_DMX_START_ADDRESS)) { // 0x00F0
       if (CmdClass == E120_SET_COMMAND) {
-        if (_rdm.packet.DataLength != 2) {
+        if (getFootprint() == 0) {
+          // No footprint, nothing to set
+          nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+        } else if (_rdm.packet.DataLength != 2) {
           // Oversized data
           nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           uint16_t newStartAddress = READINT(_rdm.packet.Data);
           if ((newStartAddress <= 0) || (newStartAddress > DMXSERIAL_MAX)) {
@@ -786,7 +830,11 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           // No sub-devices supported
           nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
-          WRITEINT(_rdm.packet.Data, _startAddress);
+          if (getFootprint() == 0) {
+            WRITEINT(_rdm.packet.Data, DMXSERIAL_ZERO_FOOTPRINT_DMX_ADDRESS);
+          } else {
+            WRITEINT(_rdm.packet.Data, _startAddress);
+          }
           _rdm.packet.DataLength = 2;
           handled = true;
         }
@@ -815,11 +863,18 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           WRITEINT(_rdm.packet.Data+ 2, E120_DEVICE_MODEL_DESCRIPTION);
           WRITEINT(_rdm.packet.Data+ 4, E120_DEVICE_LABEL);
           uint8_t offset = 6;
-          if (_initData->sensorsLength > 0) {
+          // No point reporting the personality stuff if there's only one and we can't switch
+          if (_initData->personalityCount > 1) {
+            WRITEINT(_rdm.packet.Data+ offset    , E120_DMX_PERSONALITY);
+            WRITEINT(_rdm.packet.Data+ offset + 2, E120_DMX_PERSONALITY_DESCRIPTION);
             _rdm.packet.DataLength += 2 * 2;
             offset += 2 * 2;
-            WRITEINT(_rdm.packet.Data+ 6, E120_SENSOR_DEFINITION);
-            WRITEINT(_rdm.packet.Data+ 8, E120_SENSOR_VALUE);
+          }
+          if (_initData->sensorsLength > 0) {
+            WRITEINT(_rdm.packet.Data+ offset    , E120_SENSOR_DEFINITION);
+            WRITEINT(_rdm.packet.Data+ offset + 2, E120_SENSOR_VALUE);
+            _rdm.packet.DataLength += 2 * 2;
+            offset += 2 * 2;
           }
           for (uint16_t n = 0; n < _initData->additionalCommandsLength; n++) {
             WRITEINT(_rdm.packet.Data+offset+n+n, _initData->additionalCommands[n]);
@@ -831,7 +886,85 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
       }
 
-// ADD: PARAMETER_DESCRIPTION
+// ADD: PARAMETER_DESCRIPTION - This is only required if manufacturer specific PIDs are supported
+
+    } else if (Parameter == SWAPINT(E120_DMX_PERSONALITY)) {
+      if (CmdClass == E120_SET_COMMAND) {
+        if (_initData->personalityCount <= 1) {
+          // No personalities, nothing to set, PID not supported
+          nackReason = E120_NR_UNKNOWN_PID;
+        } else if (_rdm.packet.DataLength != 1) {
+          // Oversized data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          uint8_t newPersonalityNumber = _rdm.packet.Data[0];
+          if ((newPersonalityNumber < DMXSERIAL_MIN_PERSONALITY_VALUE) || (newPersonalityNumber > min(_initData->personalityCount, DMXSERIAL_MAX_PERSONALITY_VALUE))) {
+            // Out of range personality number
+            nackReason = E120_NR_DATA_OUT_OF_RANGE;
+          } else {
+            _personalityNumber = newPersonalityNumber;
+            _rdm.packet.DataLength = 0;
+            // persist in EEPROM
+            _saveEEPRom();
+            handled = true;
+          }
+        }
+      } else if (CmdClass == E120_GET_COMMAND) {
+        if (_initData->personalityCount <= 1) {
+          // No personalities, nothing to get, PID not supported
+          nackReason = E120_NR_UNKNOWN_PID;
+        } else if (_rdm.packet.DataLength > 0) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          _rdm.packet.Data[0] = _personalityNumber; // Current personality
+          _rdm.packet.Data[1] = _initData->personalityCount; // Num of personalities
+          _rdm.packet.DataLength = 2;
+          handled = true;
+        }
+      } // if
+    } else if (Parameter == SWAPINT(E120_DMX_PERSONALITY_DESCRIPTION)) {
+      if (CmdClass == E120_GET_COMMAND) {
+        if (_initData->personalityCount <= 1) {
+          // No personalities, nothing to get, PID not supported
+          nackReason = E120_NR_UNKNOWN_PID;
+        } else if (_rdm.packet.DataLength != 1) {
+          // Oversized data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          uint8_t requestedPersonalityNumber = _rdm.packet.Data[0];
+          if ((requestedPersonalityNumber < DMXSERIAL_MIN_PERSONALITY_VALUE) || (requestedPersonalityNumber > min(_initData->personalityCount, DMXSERIAL_MAX_PERSONALITY_VALUE))) {
+            // Out of range personality number
+            nackReason = E120_NR_DATA_OUT_OF_RANGE;
+          } else {
+            _rdm.packet.DataLength = strlen(_initData->personalities[requestedPersonalityNumber - 1].description);
+            _rdm.packet.DataLength = min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+            _rdm.packet.DataLength = 3 + _rdm.packet.DataLength;
+            _rdm.packet.Data[0] = requestedPersonalityNumber; // Personality requested
+            // Personalities are 1 based, but our array is zero based
+            WRITEINT(_rdm.packet.Data + 1, _initData->personalities[requestedPersonalityNumber - 1].footprint); // Slots required
+            memcpy(_rdm.packet.Data + 3, _initData->personalities[requestedPersonalityNumber - 1].description, _rdm.packet.DataLength - 3); // Description
+            handled = true;
+          }
+        }
+      } else if (CmdClass == E120_SET_COMMAND) {
+        if (_initData->personalityCount <= 1) {
+          // No personalities, nothing to set, PID not supported
+          nackReason = E120_NR_UNKNOWN_PID;
+        } else {
+          // Unexpected set
+          nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+        }
+      } // if
 
     } else if (Parameter == SWAPINT(E120_SENSOR_DEFINITION) && _initData->sensorsLength > 0) { // 0x0200
       if (CmdClass == E120_GET_COMMAND) {
@@ -952,6 +1085,7 @@ void DMXSerialClass2::_saveEEPRom()
   // This needs restricting to 32 chars (potentially no null), for backwards compatibility
   strncpy(eeprom.deviceLabel, deviceLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
   DeviceIDCpy(eeprom.deviceID, _devID);
+  eeprom.personalityNumber = _personalityNumber;
 
   for (unsigned int i = 0; i < sizeof(eeprom); i++) {
     // EEPROM.update does a read/write check and only writes on a change
@@ -1102,8 +1236,7 @@ void respondMessage(bool8 isHandled, uint16_t nackReason)
   } else {
     _rdm.packet.ResponseType = E120_RESPONSE_TYPE_NACK_REASON; // 0x00
     _rdm.packet.DataLength = 2;
-    _rdm.packet.Data[0] = (nackReason >> 8) & 0xFF;
-    _rdm.packet.Data[1] = nackReason & 0xFF;
+    WRITEINT(_rdm.packet.Data, nackReason);
   } // if
   _rdm.packet.Length = _rdm.packet.DataLength + 24; // total packet length
 
