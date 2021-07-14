@@ -359,7 +359,7 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, R
   for (unsigned int i = 0; i < sizeof(eeprom); i++)
     ((byte *)(&eeprom))[i] = EEPROM.read(i);
 
-  // check if the EEEPROM values are from the RDM library
+  // check if the EEPROM values are from the RDM library
   if ((eeprom.sig1 == 0x6D) && (eeprom.sig2 == 0x68)) {
     _startAddress = eeprom.startAddress;
     if ((eeprom.personalityNumber < DMXSERIAL_MIN_PERSONALITY_VALUE) || (eeprom.personalityNumber > min(_initData->personalityCount, DMXSERIAL_MAX_PERSONALITY_VALUE))) {
@@ -436,7 +436,7 @@ void DMXSerialClass2::write(int channel, uint8_t value)
   if (channel < 1) channel = 1;
   if (channel > DMXSERIAL_MAX) channel = DMXSERIAL_MAX;
 
-  // The next 2 comparisations have no effect because uint8_t covers exact this range. -> removed
+  // The next 2 comparisons have no effect because uint8_t covers exact this range. -> removed
   // When changing DMXSERIAL_MAX_SLOT_VALUE or _dmxData space allocation, check again.
   // if (value < DMXSERIAL_MIN_SLOT_VALUE) value = DMXSERIAL_MIN_SLOT_VALUE;
   // if (value > DMXSERIAL_MAX_SLOT_VALUE) value = DMXSERIAL_MAX_SLOT_VALUE;

@@ -1,0 +1,91 @@
+# This is a basic workflow to help you get started with Actions for Arduino library projects
+
+name: Arduino Library Checks
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the develop branch
+  push:
+    branches: [develop,master]
+  pull_request:
+    branches: [develop,master]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+  schedule:
+    # Run every Tuesday at 6 AM UTC to catch breakage caused by new rules added to Arduino Lint or changes in the tools.
+    - cron: "0 6 * * TUE"
+
+jobs:
+
+  # This defines a job for checking the Arduino library format specifications
+  # see <https://github.com/marketplace/actions/arduino-arduino-lint-action>
+  lint:
+    name: check library format
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # Arduino - lint
+      - name: Arduino-lint
+        uses: arduino/arduino-lint-action@v1
+        with:
+          compliance: strict
+          library-manager: update
+          verbose: false
+
+  # These jobs are used to compile the examples for the specific processor/board.
+  # see <https://github.com/marketplace/actions/compile-arduino-sketches>
+  compile-uno:
+    name: compile uno examples
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # Compile Examples for UNO
+      - name: Compile examples on uno
+        uses: arduino/compile-sketches@v1
+        with:
+          verbose: true
+          fqbn: arduino:avr:uno
+          sketch-paths: |
+            - 'examples/RDMSerialRecv'
+
+  compile-leonardo:
+    needs: compile-uno
+    name: compile leonardo examples
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Compile for leonardo
+        uses: arduino/compile-sketches@v1
+        with:
+          verbose: true
+          fqbn: arduino:avr:leonardo
+          sketch-paths: |
+            - 'examples/RDMSerialRecv'
+            
+  compile-mega:
+    needs: compile-uno
+    name: compile examples for mega
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Compile for mega
+        uses: arduino/compile-sketches@v1
+        with:
+          verbose: true
+          fqbn: arduino:avr:mega
+          sketch-paths: |
+            - 'examples/RDMSerialRecv'
