@@ -168,7 +168,7 @@ struct RDMINIT {
   const char          *deviceModel;       //
 //  uint16_t footprint; // This now depends on the personality data
   uint8_t defaultPersonalityNumber; // Is this excessive flexibility?
-  uint16_t personalityCount;
+  uint8_t personalityCount;
   const RDMPERSONALITY *personalities;
   const uint16_t        additionalCommandsLength;
   const uint16_t       *additionalCommands;
