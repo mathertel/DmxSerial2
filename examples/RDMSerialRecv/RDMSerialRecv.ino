@@ -59,11 +59,17 @@ void rgb(byte r, byte g, byte b)
 
 // see DMXSerial2.h for the definition of the fields of this structure
 const uint16_t my_pids[] = {E120_DEVICE_HOURS, E120_LAMP_HOURS};
+const RDMPERSONALITY my_personalities[] = {
+  // Footprint (number of channels) and name
+  {1, "Intensity only"},
+  {3, "RGB"},
+};
 struct RDMINIT rdmInit = {
   "mathertel.de", // Manufacturer Label
   1, // Device Model ID
   "Arduino RDM Device", // Device Model Label
-  3, // footprint
+  2, // Default RDM personality (1 based)
+  (sizeof(my_personalities)/sizeof(RDMPERSONALITY)), my_personalities,  
   (sizeof(my_pids)/sizeof(uint16_t)), my_pids,
   0, NULL
 };
@@ -96,7 +102,7 @@ void setup () {
   DMXSerial2.write(start + 1,  0);
   DMXSerial2.write(start + 2,  0);
   
-  // enable pwm outputs
+  // enable PWM outputs
   pinMode(RedPin,   OUTPUT); // sets the digital pin as output
   pinMode(GreenPin, OUTPUT);
   pinMode(BluePin,  OUTPUT);
@@ -136,10 +142,22 @@ void loop() {
     } // if
     
   } else if (lastPacket < 30000) {
-    // read recent DMX values and set pwm levels 
-    analogWrite(RedPin,   DMXSerial2.readRelative(0));
-    analogWrite(GreenPin, DMXSerial2.readRelative(1));
-    analogWrite(BluePin,  DMXSerial2.readRelative(2));
+    // read recent DMX values and set PWM levels based on the RDM personality
+    switch (DMXSerial2.getPersonalityNumber()) {
+      // RDM personalities are 1 based, so ignore 0
+      case 1:
+        // Intensity only, one channel, all colours the same
+        analogWrite(RedPin,   DMXSerial2.readRelative(0));
+        analogWrite(GreenPin, DMXSerial2.readRelative(0));
+        analogWrite(BluePin,  DMXSerial2.readRelative(0));
+        break;
+      case 2:
+        // RGB mode, individual control of each channel
+        analogWrite(RedPin,   DMXSerial2.readRelative(0));
+        analogWrite(GreenPin, DMXSerial2.readRelative(1));
+        analogWrite(BluePin,  DMXSerial2.readRelative(2));
+        break;
+    }
 
   } else {
 #if defined(SERIAL_DEBUG)

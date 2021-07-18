@@ -50,10 +50,13 @@
 
 // ----- Constants -----
 
-#define DMXSERIAL_MAX 512                  ///< The max. number of supported DMX data channels
-#define DMXSERIAL_MIN_SLOT_VALUE 0         ///< The min. value a DMX512 slot can take
-#define DMXSERIAL_MAX_SLOT_VALUE 255       ///< The max. value a DMX512 slot can take
-#define DMXSERIAL_MAX_RDM_STRING_LENGTH 32 ///< The max. length of a string in RDM
+#define DMXSERIAL_MAX 512                           ///< The max. number of supported DMX data channels
+#define DMXSERIAL_MIN_SLOT_VALUE 0                  ///< The min. value a DMX512 slot can take
+#define DMXSERIAL_MAX_SLOT_VALUE 255                ///< The max. value a DMX512 slot can take
+#define DMXSERIAL_MAX_RDM_STRING_LENGTH 32          ///< The max. length of a string in RDM
+#define DMXSERIAL_MIN_PERSONALITY_VALUE 1           ///< The min. value an RDM personality can take
+#define DMXSERIAL_MAX_PERSONALITY_VALUE 255         ///< The max. value an RDM personality can take
+#define DMXSERIAL_ZERO_FOOTPRINT_DMX_ADDRESS 0xFFFF ///< The start address to report if the device currently has no footprint
 
 // ----- Enumerations -----
 
@@ -138,11 +141,12 @@ extern "C" {
 // ----- Library Class -----
 
 // These types are used to pass all the data into the initRDM function.
-// The library needs this data to reposonse at the corresponding commands for itself.
+// The library needs this data to respond to the corresponding commands for itself.
 
 struct RDMPERSONALITY {
   uint16_t footprint;
-  // maybe more here... when supporting more personalities.
+  const char *description;
+  // maybe more here... when supporting personality slot definitions.
 }; // struct RDMPERSONALITY
 
 struct RDMSENSOR {
@@ -155,16 +159,17 @@ struct RDMSENSOR {
   int16_t normalMax;
   bool8 lowHighSupported;
   bool8 recordedSupported;
-  char *description;
+  const char *description;
 }; // struct RDMSENSOR
 
 struct RDMINIT {
   const char          *manufacturerLabel; //
   const uint16_t          deviceModelId;       //
   const char          *deviceModel;       //
-  uint16_t footprint;
-  // uint16_t personalityCount;
-  // RDMPERSONALITY *personalities;
+//  uint16_t footprint; // This now depends on the personality data
+  uint8_t defaultPersonalityNumber; // Is this excessive flexibility?
+  uint8_t personalityCount;
+  const RDMPERSONALITY *personalities;
   const uint16_t        additionalCommandsLength;
   const uint16_t       *additionalCommands;
   const uint8_t sensorsLength;
@@ -234,11 +239,14 @@ class DMXSerialClass2
     /// Returns the Device ID. Copies the UID to the buffer passed through the uid argument.
     void getDeviceID(DEVICEID id);
 
-    /// Return the current DMX start address that is the first dmx address used by the device.
+    /// Return the current DMX start address, that is the first DMX address used by the device.
     uint16_t getStartAddress();
 
-    /// Return the current DMX footprint, that is the number of dmx addresses used by the device.
+    /// Return the current DMX footprint, that is the number of DMX addresses used by the device.
     uint16_t getFootprint();
+
+    /// Return the current DMX personality number (starting from 1), that is the way the device should behave when using DMX data.
+    uint8_t getPersonalityNumber();
 
     /// Register a device-specific implemented function for RDM callbacks
     void    attachRDMCallback (RDMCallbackFunction newFunction);
@@ -252,8 +260,8 @@ class DMXSerialClass2
     /// Terminate operation.
     void    term(void);
 
-    /// A short custom label given to the device.
-    char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH];
+    /// A short custom label given to the device. Add an extra char for a null.
+    char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH + 1];
 
     /// don't use that method from extern.
     void _processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 isHandled);
@@ -281,6 +289,7 @@ class DMXSerialClass2
     const char *_softwareLabel;
     bool8  _identifyMode;
     uint16_t _startAddress;
+    uint8_t _personalityNumber;
 }; // class DMXSerialClass2
 
 
