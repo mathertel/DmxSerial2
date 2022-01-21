@@ -90,7 +90,7 @@ struct RDMDATA {
 
   byte     _TransNo;     // transaction number, not checked
   byte     ResponseType;    // ResponseType
-  byte     _unknown;     // I don't know, ignore this
+  byte     _MessageCount;     // not used unless we support queued messages
   uint16_t SubDev;      // sub device number (root = 0)
   byte     CmdClass;     // command class
   uint16_t Parameter;	   // parameter ID
@@ -234,10 +234,10 @@ class DMXSerialClass2
     /// Returns the Device ID. Copies the UID to the buffer passed through the uid argument.
     void getDeviceID(DEVICEID id);
 
-    /// Return the current DMX start address that is the first dmx address used by the device.
+    /// Return the current DMX start address that is the first DMX address used by the device.
     uint16_t getStartAddress();
 
-    /// Return the current DMX footprint, that is the number of dmx addresses used by the device.
+    /// Return the current DMX footprint, that is the number of DMX addresses used by the device.
     uint16_t getFootprint();
 
     /// Register a device-specific implemented function for RDM callbacks
@@ -252,8 +252,8 @@ class DMXSerialClass2
     /// Terminate operation.
     void    term(void);
 
-    /// A short custom label given to the device.
-    char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH];
+    /// A short custom label given to the device. Add an extra char for a null.
+    char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH + 1];
 
     /// don't use that method from extern.
     void _processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 isHandled);
