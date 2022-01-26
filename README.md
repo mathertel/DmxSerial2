@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/mathertel/DmxSerial2.svg?branch=master)](https://travis-ci.org/mathertel/DmxSerial2)
+[![Arduino Library Checks](https://github.com/mathertel/DmxSerial2/actions/workflows/arduino-checks.yml/badge.svg)](https://github.com/mathertel/DmxSerial2/actions/workflows/arduino-checks.yml)[![codespell](https://github.com/mathertel/DmxSerial2/actions/workflows/codespell.yml/badge.svg)](https://github.com/mathertel/DmxSerial2/actions/workflows/codespell.yml)
 
 DmxSerial2
 ==========
