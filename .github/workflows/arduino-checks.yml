@@ -54,7 +54,7 @@ jobs:
           verbose: true
           fqbn: arduino:avr:uno
           sketch-paths: |
-            - 'examples/RDMSerialRecv'
+            - examples
 
   compile-leonardo:
     needs: compile-uno
@@ -71,7 +71,7 @@ jobs:
           verbose: true
           fqbn: arduino:avr:leonardo
           sketch-paths: |
-            - 'examples/RDMSerialRecv'
+            - examples
             
   compile-mega:
     needs: compile-uno
@@ -88,4 +88,21 @@ jobs:
           verbose: true
           fqbn: arduino:avr:mega
           sketch-paths: |
-            - 'examples/RDMSerialRecv'
+            - examples
+
+  compile-nano:
+    needs: compile-uno
+    name: compile examples for nano
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Compile for nano
+        uses: arduino/compile-sketches@v1
+        with:
+          verbose: true
+          fqbn: arduino:avr:nano
+          sketch-paths: |
+            - examples
