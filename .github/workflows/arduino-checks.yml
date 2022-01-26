@@ -4,7 +4,7 @@ name: Arduino Library Checks
 
 # Controls when the action will run.
 on:
-  # Triggers the workflow on push or pull request events but only for the develop branch
+  # Triggers the workflow on push or pull request events but only for the develop and master branches
   push:
     branches: [develop,master]
   pull_request:
