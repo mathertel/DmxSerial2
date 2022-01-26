@@ -54,7 +54,7 @@ jobs:
           verbose: true
           fqbn: arduino:avr:uno
           sketch-paths: |
-            - examples
+            - examples/
 
   compile-leonardo:
     needs: compile-uno
@@ -71,7 +71,7 @@ jobs:
           verbose: true
           fqbn: arduino:avr:leonardo
           sketch-paths: |
-            - examples
+            - examples/
             
   compile-mega:
     needs: compile-uno
@@ -88,7 +88,7 @@ jobs:
           verbose: true
           fqbn: arduino:avr:mega
           sketch-paths: |
-            - examples
+            - examples/
 
   compile-nano:
     needs: compile-uno
@@ -105,4 +105,4 @@ jobs:
           verbose: true
           fqbn: arduino:avr:nano
           sketch-paths: |
-            - examples
+            - examples/
