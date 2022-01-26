@@ -80,7 +80,8 @@ jobs:
             # Additional library dependencies can be listed here.
             # See: https://github.com/arduino/compile-sketches#libraries
           sketch-paths: |
-            - examples
+            - examples/RDMSerialRecv/RDMSerialRecv.ino
+            - examples/RDMIntoDMXOut.ino
           enable-deltas-report: true
           sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
 
