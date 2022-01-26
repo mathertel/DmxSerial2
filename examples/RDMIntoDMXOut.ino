@@ -1,13 +1,9 @@
 // - - - - -
 // DmxSerial2 - A hardware supported interface to DMX and RDM.
-// RDMSerialRecv.ino: Sample RDM application.
+// RDMIntoDMXOut.ino: Receive DMX at an RDM set address and output DMX commands on channel 1, to make any non-RDM DMX device RDM compliant.
 //
 // Copyright (c) 2011-2013 by Matthias Hertel, http://www.mathertel.de
 // This work is licensed under a BSD style license. See http://www.mathertel.de/License.aspx
-//
-// The following RDM commands are implemented here:
-// E120_LAMP_HOURS
-// E120_DEVICE_HOURS
 //
 // More documentation and samples are available at http://www.mathertel.de/Arduino
 // - - - - -
@@ -17,7 +13,6 @@
 #include <DMXSerial2.h>
 
 // see DMXSerial2.h for the definition of the fields of this structure
-//const uint16_t my_pids[] = {E120_DEVICE_HOURS, E120_LAMP_HOURS};
 const uint16_t my_pids[] = {};
 struct RDMINIT rdmInit = {
   "Company Name", // Manufacturer Label
@@ -36,7 +31,7 @@ void setup () {
   pinMode(9, OUTPUT); // defined isIdentifyMode pin for output
   digitalWrite(9, LOW);
   DmxSimple.usePin(3); // Use Digital pin 3 for DMXSimple output
-  DmxSimple.maxChannel(maxSize); //set the maxChannel for DMXSimple to the same as the RDM module's max size
+  DmxSimple.maxChannel(maxSize); // set the maxChannel for DMXSimple to the same as the RDM module's max size
 
 } // setup()
 
@@ -51,7 +46,7 @@ void loop() {
       
       for (int i = 0; i < maxSize; i++){ // for all DMX packets sent to addresses up to maxSize, forward to DMX out
         
-        DmxSimple.write(i + 1, DMXSerial2.readRelative(i)); //Grab all DMX packets sent to RDM address and forward to DMX out
+        DmxSimple.write(i + 1, DMXSerial2.readRelative(i)); // Grab all DMX packets sent to RDM address and forward to DMX out
       }
       
       digitalWrite(9, LOW);
@@ -70,7 +65,7 @@ bool8 processCommand(struct RDMDATA *rdm, uint16_t *nackReason)
 
   if (CmdClass == E120_SET_COMMAND) {
       *nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
-    }
+  }
   
   return handled;
 } 
