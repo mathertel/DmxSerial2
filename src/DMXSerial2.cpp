@@ -1,15 +1,16 @@
 // - - - - -
 // DMXSerial2 - A hardware supported interface to DMX and RDM.
 // DMXSerial2.cpp: Library implementation file
-// 
+//
 // Copyright (c) 2011-2013 by Matthias Hertel, http://www.mathertel.de
 // This work is licensed under a BSD style license. See http://www.mathertel.de/License.aspx
-// 
+//
 // Documentation and samples are available at http://www.mathertel.de/Arduino
-// 
-// IMPORTANT NOTE: Even when I name by implementation RDM, it is not a full compliant RDM
-// implementation. Right now it is only a experimental version with regards of the published second hand 
-// information about RDM available on the internet for free. (see links inside the code)
+//
+// IMPORTANT NOTE: Even when I name by implementation RDM, it is not guaranteed as a fully
+// compliant RDM implementation. Right now it is only a experimental version with regards
+// to the published information about RDM available on the internet. (see links inside the
+// code)
 //
 // History:
 // see DMXSerial2.h
@@ -30,7 +31,7 @@
 #define DmxISRPin 3 // low during interrupt service routines
 #endif
 
-// ----- Timing, Testing, and Debugging helpers ----- 
+// ----- Timing, Testing, and Debugging helpers -----
 
 // Helper function for simply sending an RGB signal out to indicate a debug or testing condition.
 void rgbDebug(byte r, byte g, byte b)
@@ -59,7 +60,7 @@ unsigned long _timingReceiveEnd; // when the last incoming byte was received
 
 #define UCSRnB UCSR0B  // USART Control and Status Register B
 
-#define RXCIEn RXCIE0  // Enable Receive Complete Interrupt 
+#define RXCIEn RXCIE0  // Enable Receive Complete Interrupt
 #define TXCIEn TXCIE0  // Enable Transmission Complete Interrupt
 #define UDRIEn UDRIE0  // Enable Data Register Empty Interrupt
 #define RXENn  RXEN0   // Enable Receiving
@@ -88,7 +89,7 @@ unsigned long _timingReceiveEnd; // when the last incoming byte was received
 
 #define UCSRnB UCSR0B  // USART Control and Status Register B
 
-#define RXCIEn RXCIE0  // Enable Receive Complete Interrupt 
+#define RXCIEn RXCIE0  // Enable Receive Complete Interrupt
 #define TXCIEn TXCIE0  // Enable Transmission Complete Interrupt
 #define UDRIEn UDRIE0  // Enable Data Register Empty Interrupt
 #define RXENn  RXEN0   // Enable Receiving
@@ -117,7 +118,7 @@ unsigned long _timingReceiveEnd; // when the last incoming byte was received
 
 #define UCSRnB UCSR1B  // USART Control and Status Register B
 
-#define RXCIEn RXCIE1  // Enable Receive Complete Interrupt 
+#define RXCIEn RXCIE1  // Enable Receive Complete Interrupt
 #define TXCIEn TXCIE1  // Enable Transmission Complete Interrupt
 #define UDRIEn UDRIE1  // Enable Data Register Empty Interrupt
 #define RXENn  RXEN1   // Enable Receiving
@@ -195,7 +196,7 @@ struct DISCOVERYMSG {
   byte headerFE[7];
   byte headerAA;
   byte maskedDevID[12];
-  byte checksum[4];  
+  byte checksum[4];
 }; // struct DISCOVERYMSG
 
 
@@ -221,7 +222,7 @@ struct EEPROMVALUES {
   byte sig1; // 0x6D  signature 1, EPROM values are valid of both signatures match.
   byte sig2; // 0x68  signature 2
   uint16_t startAddress; // the DMX start address can be changed by a RDM command.
-  char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH]; // the device Label can be changed by a RDM command.
+  char deviceLabel[DMXSERIAL_MAX_RDM_STRING_LENGTH]; // the device Label can be changed by a RDM command. Don't store the null in the EPROM for backwards compatibility.
   DEVICEID deviceID;    // store the device ID to allow easy software updates.
 }; // struct EEPROMVALUES
 
@@ -232,13 +233,13 @@ struct EEPROMVALUES {
 // The Device ID must be a unique number for each individual device.
 // The first 2 bytes are specific for a manufacturer.
 // The list of codes is available at http://tsp.plasa.org/tsp/working_groups/CP/mfctrIDs.php
-// I use the number 0x0987 that is registered with myself. 
+// I use the number 0x0987 that is registered with myself.
 // For the other 4 bytes I use the date of creation: 0x2012 0x11 0x02
 // When the EEPROM values are valid, the _devID is taken from these values.
 // This allows software updates without losing a specific device ID.
 
 // It was an easy job to register a manufacturer id to myself as explained
-// on http://tsp.plasa.org/tsp/working_groups/CP/mfctrIDs.php. 
+// on http://tsp.plasa.org/tsp/working_groups/CP/mfctrIDs.php.
 // Feel free to use my manufacturer id yourself if you promise only to use it
 // for experiments and never to put a real device.
 // If no valid EEPROM parameter block was found the following device ID is used and the last 2 bytes are randomized.
@@ -254,24 +255,26 @@ DEVICEID _devIDAll = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
 
 // This is the buffer for RDM packets being received and sent.
-// this structure is needed to RDM data separate from DMX data.
+// This structure is needed to separate RDM data from DMX data.
 union RDMMEM {
   // the most common RDM packet layout for commands
   struct RDMDATA packet;
-  
+
   // the layout of the RDM packet when returning a discovery message
   struct DISCOVERYMSG discovery;
-  
-  // the byte array used while receiving and sending.
-  byte buffer[60];
-} _rdm; // union RDMMEM
 
+  // the byte array used while receiving and sending.
+  // This is the max size of any RDM packet and it's max PDL, to allow an
+  // aribitrary length packet to be received. Thanks to the union it doesn't
+  // need any more memory
+  byte buffer[sizeof(packet)];
+} _rdm; // union RDMMEM
 
 // This flag will be set when a full RDM packet was received.
 bool8 _rdmAvailable;
 
 // This is the current 16 bit checksum for RDM commands, used by the interrupt routines.
-uint16_t _rdmCheckSum; 
+uint16_t _rdmCheckSum;
 
 // static data that is not needed externally so it is not put into the class definition.
 bool8 _isMute;    // is set to true when RDM discovery command muted this device.
@@ -350,23 +353,24 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, R
   for (unsigned int i = 0; i < sizeof(eeprom); i++)
     ((byte *)(&eeprom))[i] = EEPROM.read(i);
 
-  // check if the EEEPROM values are from the RDM library
+  // check if the EEPROM values are from the RDM library
   if ((eeprom.sig1 == 0x6D) && (eeprom.sig2 == 0x68)) {
     _startAddress = eeprom.startAddress;
-    strcpy (deviceLabel, eeprom.deviceLabel);
+    // Restricting this to 32 characters or the length, whichever is shorter
+    strncpy(deviceLabel, eeprom.deviceLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
     DeviceIDCpy(_devID, eeprom.deviceID);
 
     // setup the manufacturer addressing device-ID
     _devIDGroup[0] = _devID[0];
     _devIDGroup[1] = _devID[1];
-    
+
   } else {
     // set default values
     _startAddress = 1;
-    strcpy (deviceLabel, "new");
+    strncpy(deviceLabel, "new", DMXSERIAL_MAX_RDM_STRING_LENGTH);
     _devID[4] = random255(); // random(255);
     _devID[5] = random255(); // random(255);
-  } // if 
+  } // if
   _saveEEPRom();
 
   // now start
@@ -393,7 +397,7 @@ uint8_t DMXSerialClass2::read(int channel)
 } // read()
 
 
-// get the deviceID 
+// get the deviceID
 void DMXSerialClass2::getDeviceID (DEVICEID id) {
   DeviceIDCpy(id, _devID);
 } // getDeviceID()
@@ -404,7 +408,7 @@ uint8_t DMXSerialClass2::readRelative(unsigned int channel)
 {
   uint8_t val = 0;
   if (channel < _initData->footprint) {
-    // channel is in a valid range! (channel >= 0) is assumed by (unsigned int) type. 
+    // channel is in a valid range! (channel >= 0) is assumed by (unsigned int) type.
     val = _dmxData[_startAddress + channel];
   } // if
   return(val);
@@ -420,7 +424,7 @@ void DMXSerialClass2::write(int channel, uint8_t value)
   if (channel < 1) channel = 1;
   if (channel > DMXSERIAL_MAX) channel = DMXSERIAL_MAX;
 
-  // The next 2 comparisations have no effect because uint8_t covers exact this range. -> removed
+  // The next 2 comparisons have no effect because uint8_t covers exact this range. -> removed
   // When changing DMXSERIAL_MAX_SLOT_VALUE or _dmxData space allocation, check again.
   // if (value < DMXSERIAL_MIN_SLOT_VALUE) value = DMXSERIAL_MIN_SLOT_VALUE;
   // if (value > DMXSERIAL_MAX_SLOT_VALUE) value = DMXSERIAL_MAX_SLOT_VALUE;
@@ -444,7 +448,7 @@ void DMXSerialClass2::attachSensorCallback(RDMGetSensorValue newFunction)
 
 // some functions to hide the internal variables from being changed
 
-unsigned long DMXSerialClass2::noDataSince() { 
+unsigned long DMXSerialClass2::noDataSince() {
   /* Make sure we don't load partial updates of this multi-byte value */
   noInterrupts();
   unsigned long lastPacket = _gotLastPacket;
@@ -473,7 +477,7 @@ void DMXSerialClass2::tick(void)
     bool8 isHandled = false;
 
     struct RDMDATA *rdm = &_rdm.packet;
-    
+
     byte     CmdClass  = rdm->CmdClass;  // command class
     uint16_t Parameter = rdm->Parameter; // parameter ID
 
@@ -490,23 +494,23 @@ void DMXSerialClass2::tick(void)
         // ignore this packet
 
       } else if (CmdClass == E120_DISCOVERY_COMMAND) { // 0x10
-        // handle all Discovery commands locally 
+        // handle all Discovery commands locally
         if (Parameter == SWAPINT(E120_DISC_UNIQUE_BRANCH)) { // 0x0001
           // not tested here for pgm space reasons: rdm->Length must be 24+6+6 = 36
           // not tested here for pgm space reasons: rdm->_DataLength must be 6+6 = 12
-          
+
           if (! _isMute) {
             // check if my _devID is in the discovery range
             if ((DeviceIDCmp(rdm->Data, _devID) <= 0) && (DeviceIDCmp(_devID, rdm->Data+6) <= 0)) {
-              
-              // respond a special discovery message !
+
+              // respond with a special discovery message !
               struct DISCOVERYMSG *disc = &_rdm.discovery;
               _rdmCheckSum = 6 * 0xFF;
-              
+
               // fill in the _rdm.discovery response structure
               for (byte i = 0; i < 7; i++)
                 disc->headerFE[i] = 0xFE;
-              disc->headerAA = 0xAA;  
+              disc->headerAA = 0xAA;
               for (byte i = 0; i < 6; i++) {
                 disc->maskedDevID[i+i]   = _devID[i] | 0xAA;
                 disc->maskedDevID[i+i+1] = _devID[i] | 0x55;
@@ -516,12 +520,12 @@ void DMXSerialClass2::tick(void)
               disc->checksum[1] = (_rdmCheckSum >> 8)   | 0x55;
               disc->checksum[2] = (_rdmCheckSum & 0xFF) | 0xAA;
               disc->checksum[3] = (_rdmCheckSum & 0xFF) | 0x55;
-            
-              // disable all interrupt routines and send the _rdm.discovery packet 
+
+              // disable all interrupt routines and send the _rdm.discovery packet
               // now send out the _rdm.buffer without a starting BREAK.
-              _DMXSerialBaud(Calcprescale(DMXSPEED), DMXFORMAT); 
+              _DMXSerialBaud(Calcprescale(DMXSPEED), DMXFORMAT);
               UCSRnB = (1<<TXENn); // no interrupts !
-              
+
               // delayMicroseconds(50);  // ??? 180
               digitalWrite(_dmxModePin, _dmxModeOut); // data Out direction
 
@@ -531,15 +535,15 @@ void DMXSerialClass2::tick(void)
                 UCSRnA= (1<<TXCn);
                 loop_until_bit_is_set(UCSRnA, TXCn);
               } // for
-            
+
               digitalWrite(_dmxModePin, _dmxModeIn); // data Out direction
-            
+
               // Re-enable receiver and Receive interrupt
               _dmxState= IDLE; // initial state
               UCSRnB = (1<<RXENn) | (1<<RXCIEn);
               _DMXSerialBaud(Calcprescale(DMXSPEED), DMXFORMAT); // Enable serial reception with a 250k rate
             } // if
-          } // if 
+          } // if
 
         } else if (Parameter == SWAPINT(E120_DISC_UN_MUTE)) { // 0x0003
           isHandled = true;
@@ -594,7 +598,7 @@ void DMXSerialClass2::term(void)
 
 // Process the RDM Command Message by changing the _rdm buffer and returning (true).
 // if returning (false) a NAK will be sent.
-// This method processes the commands/parameters regarding mute, DEviceInfo, devicelabel,
+// This method processes the commands/parameters regarding mute, DeviceInfo, devicelabel,
 // manufacturer label, DMX Start address.
 // When parameters are changed by a SET command they are persisted into EEPROM.
 // When doRespond is true, send an answer back to the controller node.
@@ -606,7 +610,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
   if ((! handled) && (_rdmFunc)) {
     handled = _rdmFunc(&_rdm.packet, &nackReason);
   } // if
-  
+
   // if not already handled the command: handle it using this implementation
   if (! handled ) {
 
@@ -637,59 +641,74 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         }
       } // if
 
-    } else if ((CmdClass == E120_GET_COMMAND) && (Parameter == SWAPINT(E120_DEVICE_INFO))) { // 0x0060
-      if (_rdm.packet.DataLength > 0) {
-        // Unexpected data
-        nackReason = E120_NR_FORMAT_ERROR;
-      } else if (_rdm.packet.SubDev != 0) {
-        // No sub-devices supported
-        nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
-      } else {
-        // return all device info data 
-        DEVICEINFO *devInfo = (DEVICEINFO *)(_rdm.packet.Data); // The data has to be responded in the Data buffer.
+    } else if (Parameter == SWAPINT(E120_DEVICE_INFO)) { // 0x0060
+      if (CmdClass == E120_GET_COMMAND) {
+        if (_rdm.packet.DataLength > 0) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          // return all device info data
+          DEVICEINFO *devInfo = (DEVICEINFO *)(_rdm.packet.Data); // The data has to be responded in the Data buffer.
 
-        devInfo->protocolMajor = 1;
-        devInfo->protocolMinor = 0;
-        devInfo->deviceModel = SWAPINT(_initData->deviceModelId);
-        devInfo->productCategory = SWAPINT(E120_PRODUCT_CATEGORY_DIMMER_CS_LED);
-        devInfo->softwareVersion = SWAPINT32(0x01000000);// 0x04020900;
-        devInfo->footprint = SWAPINT(_initData->footprint);
-        devInfo->currentPersonality = 1;
-        devInfo->personalityCount = 1;
-        devInfo->startAddress = SWAPINT(_startAddress);
-        devInfo->subDeviceCount = 0;
-        devInfo->sensorCount = _initData->sensorsLength;
+          devInfo->protocolMajor = 1;
+          devInfo->protocolMinor = 0;
+          devInfo->deviceModel = SWAPINT(_initData->deviceModelId);
+          devInfo->productCategory = SWAPINT(E120_PRODUCT_CATEGORY_DIMMER_CS_LED);
+          devInfo->softwareVersion = SWAPINT32(0x01000000);// 0x04020900;
+          devInfo->footprint = SWAPINT(_initData->footprint);
+          devInfo->currentPersonality = 1;
+          devInfo->personalityCount = 1;
+          devInfo->startAddress = SWAPINT(_startAddress);
+          devInfo->subDeviceCount = 0;
+          devInfo->sensorCount = _initData->sensorsLength;
 
-         _rdm.packet.DataLength = sizeof(DEVICEINFO);
-        handled = true;
+           _rdm.packet.DataLength = sizeof(DEVICEINFO);
+          handled = true;
+        }
+      } else if (CmdClass == E120_SET_COMMAND) {
+        // Unexpected set
+        nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
       }
 
-    } else if ((CmdClass == E120_GET_COMMAND) && (Parameter == SWAPINT(E120_MANUFACTURER_LABEL))) { // 0x0081
-      if (_rdm.packet.DataLength > 0) {
-        // Unexpected data
-        nackReason = E120_NR_FORMAT_ERROR;
-      } else if (_rdm.packet.SubDev != 0) {
-        // No sub-devices supported
-        nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
-      } else {
-        // return the manufacturer label
-        _rdm.packet.DataLength = strlen(_initData->manufacturerLabel);
-        memcpy(_rdm.packet.Data, _initData->manufacturerLabel, _rdm.packet.DataLength);
-        handled = true;
+    } else if (Parameter == SWAPINT(E120_MANUFACTURER_LABEL)) { // 0x0081
+      if (CmdClass == E120_GET_COMMAND) {
+        if (_rdm.packet.DataLength > 0) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          // return the manufacturer label
+          _rdm.packet.DataLength = strnlen(_initData->manufacturerLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+          memcpy(_rdm.packet.Data, _initData->manufacturerLabel, _rdm.packet.DataLength);
+          handled = true;
+        }
+      } else if (CmdClass == E120_SET_COMMAND) {
+        // Unexpected set
+        nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
       }
 
-    } else if ((CmdClass == E120_GET_COMMAND) && (Parameter == SWAPINT(E120_DEVICE_MODEL_DESCRIPTION))) { // 0x0080
-      if (_rdm.packet.DataLength > 0) {
-        // Unexpected data
-        nackReason = E120_NR_FORMAT_ERROR;
-      } else if (_rdm.packet.SubDev != 0) {
-        // No sub-devices supported
-        nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
-      } else {
-        // return the DEVICE MODEL DESCRIPTION
-        _rdm.packet.DataLength = strlen(_initData->deviceModel);
-        memcpy(_rdm.packet.Data, _initData->deviceModel, _rdm.packet.DataLength);
-        handled = true;
+    } else if (Parameter == SWAPINT(E120_DEVICE_MODEL_DESCRIPTION)) { // 0x0080
+      if (CmdClass == E120_GET_COMMAND) {
+        if (_rdm.packet.DataLength > 0) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          // return the DEVICE MODEL DESCRIPTION
+          _rdm.packet.DataLength = strnlen(_initData->deviceModel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+          memcpy(_rdm.packet.Data, _initData->deviceModel, _rdm.packet.DataLength);
+          handled = true;
+        }
+      } else if (CmdClass == E120_SET_COMMAND) {
+        // Unexpected set
+        nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
       }
 
     } else if (Parameter == SWAPINT(E120_DEVICE_LABEL)) { // 0x0082
@@ -699,7 +718,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           nackReason = E120_NR_FORMAT_ERROR;
         } else {
           memcpy(deviceLabel, _rdm.packet.Data, _rdm.packet.DataLength);
-          deviceLabel[_rdm.packet.DataLength] = '\0';
+          deviceLabel[min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH)] = '\0';
           _rdm.packet.DataLength = 0;
           // persist in EEPROM
           _saveEEPRom();
@@ -713,24 +732,29 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           // No sub-devices supported
           nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
-          _rdm.packet.DataLength = strlen(deviceLabel);
+          _rdm.packet.DataLength = strnlen(deviceLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
           memcpy(_rdm.packet.Data, deviceLabel, _rdm.packet.DataLength);
           handled = true;
         }
       } // if
 
-    } else if ((CmdClass == E120_GET_COMMAND) && (Parameter == SWAPINT(E120_SOFTWARE_VERSION_LABEL))) { // 0x00C0
-      if (_rdm.packet.DataLength > 0) {
-        // Unexpected data
-        nackReason = E120_NR_FORMAT_ERROR;
-      } else if (_rdm.packet.SubDev != 0) {
-        // No sub-devices supported
-        nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
-      } else {
-        // return the SOFTWARE_VERSION_LABEL
-        _rdm.packet.DataLength = strlen(_softwareLabel);
-        memcpy(_rdm.packet.Data, _softwareLabel, _rdm.packet.DataLength);
-        handled = true;
+    } else if (Parameter == SWAPINT(E120_SOFTWARE_VERSION_LABEL)) { // 0x00C0
+      if (CmdClass == E120_GET_COMMAND) {
+        if (_rdm.packet.DataLength > 0) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          // return the SOFTWARE_VERSION_LABEL
+          _rdm.packet.DataLength = strnlen(_softwareLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+          memcpy(_rdm.packet.Data, _softwareLabel, _rdm.packet.DataLength);
+          handled = true;
+        }
+      } else if (CmdClass == E120_SET_COMMAND) {
+        // Unexpected set
+        nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
       }
 
     } else if (Parameter == SWAPINT(E120_DMX_START_ADDRESS)) { // 0x00F0
@@ -821,7 +845,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             // Out of range sensor
             nackReason = E120_NR_DATA_OUT_OF_RANGE;
           } else {
-            _rdm.packet.DataLength = 13 + strlen(_initData->sensors[sensorNr].description);
+            _rdm.packet.DataLength = 13 + strnlen(_initData->sensors[sensorNr].description, DMXSERIAL_MAX_RDM_STRING_LENGTH);
             _rdm.packet.Data[0] = sensorNr;
             _rdm.packet.Data[1] = _initData->sensors[sensorNr].type;
             _rdm.packet.Data[2] = _initData->sensors[sensorNr].unit;
@@ -891,7 +915,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
 } // _processRDMMessage
 
 
-// ----- internal functions and interrupt implementations ----- 
+// ----- internal functions and interrupt implementations -----
 
 // internal init function for all static initializations.
 void DMXSerialClass2::_baseInit() {
@@ -899,11 +923,11 @@ void DMXSerialClass2::_baseInit() {
 
   _dmxState= IDLE; // initial state
   _gotLastPacket = millis(); // remember current (relative) time in msecs.
-  
+
   // initialize the DMX buffer
   for (int n = 0; n < DMXSERIAL_MAX+1; n++)
     _dmxData[n] = 0;
-    
+
   pinMode(_dmxModePin, OUTPUT); // enables pin 2 for output to control data direction
 } // _baseInit
 
@@ -921,17 +945,18 @@ void DMXSerialClass2::_saveEEPRom()
   eeprom.sig1 = 0x6D;
   eeprom.sig2 = 0x68;
   eeprom.startAddress = _startAddress;
-  strcpy (eeprom.deviceLabel, deviceLabel);
+  // This needs restricting to 32 chars (potentially no null), for backwards compatibility
+  strncpy(eeprom.deviceLabel, deviceLabel, DMXSERIAL_MAX_RDM_STRING_LENGTH);
   DeviceIDCpy(eeprom.deviceID, _devID);
 
   for (unsigned int i = 0; i < sizeof(eeprom); i++) {
-    if (((byte *)(&eeprom))[i] != EEPROM.read(i))
-      EEPROM.write(i, ((byte *)(&eeprom))[i]);
+    // EEPROM.update does a read/write check and only writes on a change
+    EEPROM.update(i, ((byte *)(&eeprom))[i]);
   } // for
 } // _saveEEPRom
 
 
-// ----- internal non-class functions and interrupt implementations ----- 
+// ----- internal non-class functions and interrupt implementations -----
 
 // Initialize the Hardware serial port with the given baud rate
 // using 8 data bits, no parity, 2 stop bits for data
@@ -970,14 +995,14 @@ ISR(USARTn_RX_vect)
 
   } else if (DmxState == IDLE) {
     // wait on...
-    
+
   } else if (DmxState == BREAK) {
     if (DmxByte == 0) {
       _dmxState = DMXDATA; // DMX data start code detected
       // _dmxData[_dmxPos++] = DmxByte;  // store in DMX buffer
       _dmxPos = 1;
       _gotLastPacket = millis(); // remember current (relative) time in msecs.
-      
+
     } else if (DmxByte == E120_SC_RDM) {
       _dmxState = RDMDATA;  // RDM command start code
       _rdm.buffer[_dmxPos++] = DmxByte;  // store in RDM buffer (in StartCode)
@@ -987,7 +1012,7 @@ ISR(USARTn_RX_vect)
       // This might be a non RDM command -> not implemented so wait for next BREAK !
       _dmxState= IDLE;
     } // if
-    
+
   } else if (DmxState == DMXDATA) {
     // another DMX byte
     _dmxData[_dmxPos++]= DmxByte;  // store received data into DMX data buffer.
@@ -995,11 +1020,11 @@ ISR(USARTn_RX_vect)
     if (_dmxPos > DMXSERIAL_MAX) { // all channels done.
       _dmxState = IDLE; // wait for next break
     } // if
-   
+
   } else if (DmxState == RDMDATA) {
     // another RDM byte
     if (_dmxPos >= (int)sizeof(_rdm.buffer)) {
-      // too much data ... 
+      // too much data ...
       _dmxState = IDLE; // wait for next break
     } else {
       _rdm.buffer[_dmxPos++] = DmxByte;
@@ -1049,7 +1074,7 @@ ISR(USARTn_TX_vect)
   if (_dmxPos == 0) {
     // this interrupt occurs after the stop bits of the break byte
     // now back to DMX speed: 250000baud
-    _DMXSerialBaud(Calcprescale(DMXSPEED), DMXFORMAT); 
+    _DMXSerialBaud(Calcprescale(DMXSPEED), DMXFORMAT);
     // take next interrupt when data register empty (early) and handle sending the next byte in USART_UDRE_vect
     UCSRnB = (1<<TXENn) | (1<<UDRIEn);
 
@@ -1064,9 +1089,9 @@ ISR(USARTn_TX_vect)
 void respondMessage(bool8 isHandled, uint16_t nackReason)
 {
   int bufferLen;
-  uint16_t checkSum = 0; 
+  uint16_t checkSum = 0;
 
-  // no need to set these data fields: 
+  // no need to set these data fields:
   // StartCode, SubStartCode
   if (isHandled) {
     _rdm.packet.ResponseType = E120_RESPONSE_TYPE_ACK; // 0x00
@@ -1077,7 +1102,7 @@ void respondMessage(bool8 isHandled, uint16_t nackReason)
     _rdm.packet.Data[1] = nackReason & 0xFF;
   } // if
   _rdm.packet.Length = _rdm.packet.DataLength + 24; // total packet length
-  
+
   // swap SrcID into DestID for sending back.
   DeviceIDCpy(_rdm.packet.DestID, _rdm.packet.SourceID);
   DeviceIDCpy(_rdm.packet.SourceID, _devID);
@@ -1105,8 +1130,8 @@ void respondMessage(bool8 isHandled, uint16_t nackReason)
   UCSRnA= (1<<TXCn);
   loop_until_bit_is_set(UCSRnA, TXCn);
 
-  _DMXSerialBaud(Calcprescale(DMXSPEED), DMXFORMAT); 
-  
+  _DMXSerialBaud(Calcprescale(DMXSPEED), DMXFORMAT);
+
   bufferLen = _rdm.packet.Length;
 
   for (byte i = 0; i < bufferLen; i++) {
