@@ -12,6 +12,7 @@
 /* Compiled by: Scott M. Blair   8/18/2006                       */
 /* Updated 10/11/2011: Adding E1.20-2010 and E1.37-1 defines.    */
 /* Updated 10/24/2014: Adding E1.37-2 defines                    */
+/* Updated 1/25/2023: Adding E1.37-7 defines                     */
 /*****************************************************************/
 /* For updates see: http://www.rdmprotocol.org                   */
 /*****************************************************************/
@@ -35,6 +36,9 @@
 //#define ALL_DEVICES_ID                                  0xmmmmFFFFFFFF   /* (Specific Manufacturer ID 0xmmmm)                */
 
 #define E120_SUB_DEVICE_ALL_CALL                          0xFFFF
+
+#define E_137_2_IPV4_UNCONFIGURED 						            0x00000000 /* Defined in ANSI E1.37-2                                */
+#define E_137_2_NO_DEFAULT_ROUTE 						              0x00000000 /* Defined in ANSI E1.37-2                                */
 
 
 /********************************************************/
@@ -143,23 +147,41 @@
 #define E137_1_LOCK_STATE                                 0x0641 /* Defined in ANSI E1.37-1                                    */
 #define E137_1_LOCK_STATE_DESCRIPTION                     0x0642 /* Support required if MODULATION_FREQUENCY is supported      */
 
-/* Category - Network Configuration*/
+/* Category - IP & DNS Network Configuration - Defined in ANSI E1.37-2 table A-1*/
 
-#define E137_2_LIST_INTERFACES                            0x0700 /* Defined in ANSI E1.37-2                                    */
-#define E137_2_INTERFACE_LABEL                            0x0701 /* Defined in ANSI E1.37-2                                    */
-#define E137_2_INTERFACE_HARDWARE_ADDRESS_TYPE1           0x0702 /* Defined in ANSI E1.37-2                                    */
-#define E137_2_IPV4_DHCP_MODE                             0x0703 /* Defined in ANSI E1.37-2                                    */
-#define E137_2_IPV4_ZEROCONF_MODE                         0x0704 /* Defined in ANSI E1.37-2                                    */
-#define E137_2_IPV4_CURRENT_ADDRESS                       0x0705 /* Defined in ANSI E1.37-2                                    */
-#define E137_2_IPV4_STATIC_ADDRESS                        0x0706 /* Defined in ANSI E1.37-2                                    */
-#define E137_2_INTERFACE_RENEW_DHCP                       0x0707 /* Defined in ANSI E1.37-2                                    */
-#define E137_2_INTERFACE_RELEASE_DHCP                     0x0708 /* Defined in ANSI E1.37-2                                    */
-#define E137_2_INTERFACE_APPLY_CONFIGURATION              0x0709 /* Defined in ANSI E1.37-2 (Support required if _ADDRESS PIDs supported) */
-#define E137_2_IPV4_DEFAULT_ROUTE                         0x070A /* Defined in ANSI E1.37-2                                    */
-#define E137_2_DNS_IPV4_NAME_SERVER                       0x070B /* Defined in ANSI E1.37-2                                    */
-#define E137_2_DNS_HOSTNAME                               0x070C /* Defined in ANSI E1.37-2                                    */
-#define E137_2_DNS_DOMAIN_NAME                            0x070D /* Defined in ANSI E1.37-2                                    */
+#define E137_2_LIST_INTERFACES                            0x0700 /* PID supports GET only.  *Support required only if any other PID in Table A-1 is supported */
+#define E137_2_INTERFACE_LABEL                            0x0701 /* PID supports GET only                                      */
+#define E137_2_INTERFACE_HARDWARE_ADDRESS_TYPE1           0x0702 /* PID supports GET only                                      */
+#define E137_2_IPV4_DHCP_MODE                             0x0703 /* PID supports GET & SET                                     */
+#define E137_2_IPV4_ZEROCONF_MODE                         0x0704 /* PID supports GET & SET                                     */
+#define E137_2_IPV4_CURRENT_ADDRESS                       0x0705 /* PID supports GET only                                      */
+#define E137_2_IPV4_STATIC_ADDRESS                        0x0706 /* PID supports GET & SET                                     */
+#define E137_2_INTERFACE_RENEW_DHCP                       0x0707 /* PID supports SET only                                      */
+#define E137_2_INTERFACE_RELEASE_DHCP                     0x0708 /* PID supports SET only                                      */
+#define E137_2_INTERFACE_APPLY_CONFIGURATION              0x0709 /* PID supports SET only. *Support required only if the SET command for any of IPV4_DHCP_MODE, IPV4_ZEROCONF_MODE or IPV4_STATIC_ADDRESS are supported */
+#define E137_2_IPV4_DEFAULT_ROUTE                         0x070A /* PID supports GET & SET                                     */
+#define E137_2_DNS_IPV4_NAME_SERVER                       0x070B /* PID supports GET & SET                                     */
+#define E137_2_DNS_HOSTNAME                               0x070C /* PID supports GET & SET                                     */
+#define E137_2_DNS_DOMAIN_NAME                            0x070D /* PID supports GET & SET                                     */
 
+/* Category - RDMnet and RDM Splitter Management - Defined in ANSI E1.37-7 */
+#define E137_7_ENDPOINT_LIST 							                0x0900 /* PID supports GET only. Required by: D G S P                */
+#define E137_7_ENDPOINT_LIST_CHANGE 				          	  0x0901 /* PID supports GET only. Required by: D* G* S* P*            */
+#define E137_7_IDENTIFY_ENDPOINT 						              0x0902 /* PID supports GET & SET.                                    */
+#define E137_7_ENDPOINT_TO_UNIVERSE 				          	  0x0903 /* PID supports GET & SET. Required by: D* G*                 */
+#define E137_7_ENDPOINT_MODE 							                0x0904 /* PID supports GET & SET.                                    */
+#define E137_7_ENDPOINT_LABEL 						            	  0x0905 /* PID supports GET & SET.                                    */
+#define E137_7_RMD_TRAFFIC_ENABLE 						            0x0906 /* PID supports GET & SET.                                    */
+#define E137_7_DISCOVERY_STATE 							              0x0907 /* PID supports GET & SET. Required by: G* P*                 */
+#define E137_7_BACKGROUND_DISCOVERY 					            0x0908 /* PID supports GET & SET.                                    */
+#define E137_7_ENDPOINT_TIMING 							              0x0909 /* PID supports GET & SET.                                    */
+#define E137_7_ENDPOINT_TIMING_DESCRIPTION 			      	  0x090A /* PID supports GET only. Required by: G* S* P*               */
+#define E137_7_ENDPOINT_RESPONDERS 						            0x090B /* PID supports GET only. Required by: D G S P                */
+#define E137_7_ENDPOINT_RESPONDERS_LIST_CHANGE 			      0x090C /* PID supports GET only. Required by: D* G* S* P*            */
+#define E137_7_BINDING_CONTROL_FIELDS 					          0x090D /* PID supports GET only. Required by: G S P                  */
+#define E137_7_BACKGROUND_QUEUED_STATUS_POLICY 			      0x090E /* PID supports GET & SET.                                    */
+#define E137_7_BACKGROUND_QUEUED_STATUS_POLICY_DESCRIPTION 0x090F /* PID supports GET only. Required by: G* P*                 */
+/** Required By column denotes support required by the following device classifications: 'D' RDMnet Device, 'G' RDMnet Gateway, 'S' Splitter, and 'P' Proxy. If a device has functionality of multiple classifications then 'required support' applies to each classification supported. */
 
 /* Category - Control              */
 #define E120_IDENTIFY_DEVICE                              0x1000
@@ -632,6 +654,10 @@
                                                                 /* Message or Status Message responses.                         */
 #define E137_2_NR_ACTION_NOT_SUPPORTED                   0x000B /* The parameter data is valid but the SET operation cannot be  */
                                                                 /* performed with the current configuration.                    */
+#define E137_7_NR_ACTION_NOT_SUPPORTED				        	 0x000B /* The specified action is not supported.                       */
+#define E137_7_NR_ENDPOINT_NUMBER_INVALID 				       0x000C /* The specified endpoint is invalid.                           */
+#define E137_7_NR_INVALID_ENDPOINT_MODE 				         0x000D /* The specified endpoint is in an invalid Endpoint Mode for the requested action. */
+#define E137_7_NR_UNKNOWN_UID 							             0x000E /* The specified UID is not recognized.                         */
 
 /********************************************************************************************************************************/
 /********************************************************************************************************************************/
@@ -669,3 +695,45 @@
 #define E137_2_DHCP_MODE_INACTIVE                        0x00 /* IP Address was not obtained via DHCP                           */
 #define E137_2_DHCP_MODE_ACTIVE                          0x01 /* IP Address was obtained via DHCP                               */
 #define E137_2_DHCP_MODE_UNKNOWN                         0x02 /* The system cannot determine if address was obtained via DHCP.  */
+
+/********************************************************************************************************************************/
+/********************************************************************************************************************************/
+/* ANSI E1.37-7 DEFINES                                                                                                         */
+/********************************************************************************************************************************/
+/********************************************************************************************************************************/
+
+/********************************************************/
+/* E1.37-7 Table 7-1: Policy Settings Types             */
+/********************************************************/
+#define E_137_7_STATUS_NONE 				              			0x00 /* Status type None 							              					          */
+#define E_137_7_STATUS_ADVISORY 						            0x01 /* Status type Advisory and higher 						       		          */
+#define E_137_7_STATUS_WARNING 					            		0x02 /* Status type Warning and higher									                */
+#define E_137_7_STATUS_ERROR 							              0x03 /* Status type Error						 					            	            */
+
+/********************************************************/
+/* E1.37-7 Table A-2: Discovery state Defines           */
+/********************************************************/
+#define E_137_7_DISCOVERY_INCOMPLETE 					          0x00 /*Valid in GET_COMMAND_RESPONSE? Yes, indicates Discovery has never been run or the previous discovery did not run to completion. Valid in SET_COMMAND? No. */
+#define E_137_7_DISCOVERY_INCREMENTAL 					        0x01 /*Valid in GET_COMMAND_RESPONSE? Yes, device is currently running incremental discovery. Valid in SET_COMMAND? Yes, device shall only discover current unmuted devices.*/
+#define E_137_7_DISCOVERT_FULL 							            0x02 /*Valid in GET_COMMAND_RESPONSE? Yes, device is currently running full discovery. Valid in SET_COMMAND? Yes, device shall clear the Endpoint Device List and perform full discovery.*/
+#define E_137_7_DISCOVERY_NOT_ACTIVE 					          0x04 /*Valid in GET_COMMAND_RESPONSE? Yes, discovery is not currently running but has been successfully completed in the past. Valid in SET_COMMAND? Yes, device shall terminate any discovery routine currently running. The Endpoint Device List shall not be cleared. */
+/* Manufacturer-Specific States 0x80 - 0xDF
+
+/********************************************************/
+/* E1.37-7 Table A-3: Discovery Status Defines          */
+/********************************************************/
+#define E_137_7_DISCOVERY_COUNT_INCOMPLETE 				      0x0000 /*See section 6.8 						                        					  */
+#define E_137_7_DISCOVERY_COUNT_UNKNOWN 				        0xFFFF /*See section 6.8 											                        	*/
+
+/********************************************************/
+/* E1.37-7 Table A-4: Endpoint Mode Defines             */
+/********************************************************/
+#define E_137_7_ENDPOINT_MODE_DISABLED 				        	0x00 /*Endpoint is disabled for all traffic.							              */
+#define E_137_7_ENDPOINT_MODE_INPUT 					          0x01 /*Endpoint is configured as an Input, accepting DMX512 communication. */
+#define E_137_7_ENDPOINT_MODE_OUTPUT 					          0x02 /*Endpoint is configured as an Output generating DMX512 communication */
+
+/********************************************************/
+/* E1.37-7 Table A-5: Endpoint Types                    */
+/********************************************************/
+#define E_137_7_ENDPOINT_TYPE_VIRTUAL 				        	0x00 /*See [RDMnet] Section 7.1.6.2					                  				*/
+#define E_137_7_ENDPOINT_TYPE_PHYSICAL 					        0x01 /*See [RDMnet] Section 7.1.6.1										                */
