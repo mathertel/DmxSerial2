@@ -117,6 +117,9 @@ struct RDMDATA {
 /// write a 16 bit number to a data buffer location
 #define WRITEINT(p, d) (p)[0] = (d&0xFF00)>>8; (p)[1] = (d&0x00FF);
 
+/// write a 32 bit number to a data buffer location
+#define WRITELONG(p, d) (p)[0] = (d&0xFF000000)>>24; (p)[1] = (d&0x00FF0000)>>16; (p)[2] = (d&0x0000FF00)>>8; (p)[3] = (d&0x000000FF);
+
 
 // ----- Callback function types -----
 
@@ -133,6 +136,16 @@ extern "C" {
    * @brief Callback function for RDM sensors.
    */
   typedef bool8 (*RDMGetSensorValue)(uint8_t sensorNr, int16_t *value, int16_t *lowestValue, int16_t *highestValue, int16_t *recordedValue);
+
+  /**
+   * @brief Callback function for getting RDM parameters.
+   */
+  typedef bool8 (*RDMGetParameterValue)(uint16_t parameterNr, int8_t *value);
+
+  /**
+   * @brief Callback function for setting RDM parameters.
+   */
+  typedef bool8 (*RDMSetParameterValue)(uint16_t parameterNr, int8_t *value);
 }
 
 // ----- Library Class -----
@@ -158,6 +171,20 @@ struct RDMSENSOR {
   char *description;
 }; // struct RDMSENSOR
 
+struct RDMPARAMETER {
+  uint16_t pid;
+  uint8_t length;
+  uint8_t type;
+  uint8_t unit;
+  uint8_t prefix;
+  int32_t rangeMin;
+  int32_t rangeMax;
+  int32_t defaultValue;
+  bool8 getSupported;
+  bool8 setSupported;
+  char *description;
+}; // struct RDMPARAMETER
+
 struct RDMINIT {
   const char          *manufacturerLabel; //
   const uint16_t          deviceModelId;       //
@@ -169,6 +196,8 @@ struct RDMINIT {
   const uint16_t       *additionalCommands;
   const uint8_t sensorsLength;
   const RDMSENSOR *sensors;
+  const uint8_t parametersLength;
+  const RDMPARAMETER *parameters;
 }; // struct RDMINIT
 
 
@@ -185,7 +214,7 @@ class DMXSerialClass2
      * @param [in] modeOut The level for outbound communication. This parameter is optiona and defaults to 1 = HIGH.
      */
     void    init (struct RDMINIT *initData, RDMCallbackFunction func, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1) {
-      init(initData, func, NULL, modePin, modeIn, modeOut);
+      init(initData, func, NULL, NULL, NULL, modePin, modeIn, modeOut);
     }
 
     /**
@@ -197,7 +226,36 @@ class DMXSerialClass2
      * @param [in] modeIn  The level for inbound communication. This parameter is optiona and defaults to 0 = LOW.
      * @param [in] modeOut The level for outbound communication. This parameter is optiona and defaults to 1 = HIGH.
      */
-    void    init (struct RDMINIT *initData, RDMCallbackFunction func, RDMGetSensorValue sensorFunc, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1);
+    void    init (struct RDMINIT *initData, RDMCallbackFunction func, RDMGetSensorValue sensorFunc, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1) {
+      init(initData, func, sensorFunc, NULL, NULL, modePin, modeIn, modeOut);
+    }
+
+    /**
+     * @brief Initialize for RDM mode with parameters.
+     * @param [in] initData Startup parameters.
+     * @param [in] func Callback function for answering on device specific features.
+     * @param [in] getParamFunc Callback function for retrieving a parameter value.
+     * @param [in] setParamFunc Callback function for setting a parameter value.
+     * @param [in] modePin The pin used to switch the communication direction. This parameter is optiona and defaults to 2.
+     * @param [in] modeIn  The level for inbound communication. This parameter is optiona and defaults to 0 = LOW.
+     * @param [in] modeOut The level for outbound communication. This parameter is optiona and defaults to 1 = HIGH.
+     */
+    void    init (struct RDMINIT *initData, RDMCallbackFunction func, RDMGetParameterValue getParamFunc, RDMSetParameterValue setParamFunc, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1) {
+      init(initData, func, NULL, getParamFunc, setParamFunc, modePin, modeIn, modeOut);
+    }
+
+    /**
+     * @brief Initialize for RDM mode with sensor and parameter.
+     * @param [in] initData Startup parameters.
+     * @param [in] func Callback function for answering on device specific features.
+     * @param [in] sensorFunc Callback function for retrieving a sensor value.
+     * @param [in] getParamFunc Callback function for retrieving a parameter value.
+     * @param [in] setParamFunc Callback function for setting a parameter value.
+     * @param [in] modePin The pin used to switch the communication direction. This parameter is optiona and defaults to 2.
+     * @param [in] modeIn  The level for inbound communication. This parameter is optiona and defaults to 0 = LOW.
+     * @param [in] modeOut The level for outbound communication. This parameter is optiona and defaults to 1 = HIGH.
+     */
+    void    init (struct RDMINIT *initData, RDMCallbackFunction func, RDMGetSensorValue sensorFunc, RDMGetParameterValue getParamFunc, RDMSetParameterValue setParamFunc, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1);
 
     /**
      * @brief Read the current value of a channel.
@@ -246,6 +304,9 @@ class DMXSerialClass2
     /// Register a device-specific implemented function for getting sensor values
     void    attachSensorCallback (RDMGetSensorValue newFunction);
 
+    /// Register a device-specific implemented function for getting/setting parameter values
+    void    attachParameterCallback(RDMGetParameterValue newGetFunction, RDMSetParameterValue newSetFunction);
+
     /// check for unprocessed RDM Command.
     void    tick(void);
 
@@ -273,6 +334,12 @@ class DMXSerialClass2
 
     /// callback function to get sensor value
     RDMGetSensorValue _sensorFunc;
+
+    /// callback function to get parameter value
+    RDMGetParameterValue _getParamFunc;
+
+    /// callback function to set parameter value
+    RDMSetParameterValue _setParamFunc;
 
     /// remember the given manufacturer label and device model strings during init
     struct RDMINIT *_initData;

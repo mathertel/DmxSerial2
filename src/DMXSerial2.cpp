@@ -327,7 +327,15 @@ int random255();
 
 // Initialize or reinitialize the DMX RDM mode.
 // The other values are stored for later use with the specific commands.
-void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, RDMGetSensorValue sensorFunc, uint8_t modePin, uint8_t modeIn, uint8_t modeOut)
+void DMXSerialClass2::init(struct RDMINIT *initData,
+  RDMCallbackFunction func,
+  RDMGetSensorValue sensorFunc,
+  RDMGetParameterValue getParamFunc,
+  RDMSetParameterValue setParamFunc,
+  uint8_t modePin,
+  uint8_t modeIn,
+  uint8_t modeOut
+)
 {
   // This structure is defined for mapping the values in the EEPROM
   struct EEPROMVALUES eeprom;
@@ -336,6 +344,8 @@ void DMXSerialClass2::init(struct RDMINIT *initData, RDMCallbackFunction func, R
   _initData = initData;
   _rdmFunc = func;
   _sensorFunc = sensorFunc;
+  _getParamFunc = getParamFunc;
+  _setParamFunc = setParamFunc;
 
   _dmxModePin = modePin;
   _dmxModeIn = modeIn;
@@ -445,6 +455,13 @@ void DMXSerialClass2::attachSensorCallback(RDMGetSensorValue newFunction)
 {
   _sensorFunc = newFunction;
 } // attachSensorCallback
+
+// Register self implemented functions to get/set parameter values
+void DMXSerialClass2::attachParameterCallback(RDMGetParameterValue newGetFunction, RDMSetParameterValue newSetFunction)
+{
+  _getParamFunc = newGetFunction;
+  _setParamFunc = newSetFunction;
+} // attachParameterCallback
 
 // some functions to hide the internal variables from being changed
 
@@ -612,7 +629,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
   } // if
 
   // if not already handled the command: handle it using this implementation
-  if (! handled ) {
+  if (! handled) {
 
     if (Parameter == SWAPINT(E120_IDENTIFY_DEVICE)) { // 0x1000
       if (CmdClass == E120_SET_COMMAND) { // 0x30
@@ -808,7 +825,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           // E120_DEVICE_INFO
           // E120_DMX_START_ADDRESS
           // E120_SOFTWARE_VERSION_LABEL
-          _rdm.packet.DataLength = 2 * (3 + _initData->additionalCommandsLength);
+          _rdm.packet.DataLength = 2 * (3 + _initData->additionalCommandsLength + _initData->parametersLength);
           WRITEINT(_rdm.packet.Data   , E120_MANUFACTURER_LABEL);
           WRITEINT(_rdm.packet.Data+ 2, E120_DEVICE_MODEL_DESCRIPTION);
           WRITEINT(_rdm.packet.Data+ 4, E120_DEVICE_LABEL);
@@ -820,7 +837,12 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             WRITEINT(_rdm.packet.Data+ 8, E120_SENSOR_VALUE);
           }
           for (uint16_t n = 0; n < _initData->additionalCommandsLength; n++) {
-            WRITEINT(_rdm.packet.Data+offset+n+n, _initData->additionalCommands[n]);
+            WRITEINT(_rdm.packet.Data+offset, _initData->additionalCommands[n]);
+            offset += 2;
+          }
+          for (uint16_t n = 0; n < _initData->parametersLength; n++) {
+            WRITEINT(_rdm.packet.Data+offset, _initData->parameters[n].pid);
+            offset += 2;
           }
           handled = true;
         }
@@ -829,7 +851,95 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
       }
 
-// ADD: PARAMETER_DESCRIPTION
+    } else if (Parameter == SWAPINT(E120_PARAMETER_DESCRIPTION) && _initData->parametersLength > 0) { // 0x0051
+      if (CmdClass == E120_GET_COMMAND) {
+        if (_rdm.packet.DataLength != 2) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          uint16_t requestedPid = READINT(_rdm.packet.Data);
+          uint16_t parameterNr;
+          bool8 validPid = false;
+          for (uint16_t n = 0; n < _initData->parametersLength; n++) {
+            if (requestedPid == _initData->parameters[n].pid) {
+              parameterNr = n;
+              validPid = true;
+              break;
+            }
+          }
+          if (!validPid) {
+            // Out of range sensor
+            nackReason = E120_NR_UNKNOWN_PID;
+          } else {
+            _rdm.packet.DataLength = 20 + strnlen(_initData->parameters[parameterNr].description, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+            WRITEINT(_rdm.packet.Data, _initData->parameters[parameterNr].pid);
+            _rdm.packet.Data[2] = _initData->parameters[parameterNr].length;
+            _rdm.packet.Data[3] = _initData->parameters[parameterNr].type;
+            if (_initData->parameters[parameterNr].getSupported && !_initData->parameters[parameterNr].setSupported)
+              _rdm.packet.Data[4] = E120_CC_GET;
+            else if (!_initData->parameters[parameterNr].getSupported && _initData->parameters[parameterNr].setSupported)
+              _rdm.packet.Data[4] = E120_CC_SET;
+            else if (_initData->parameters[parameterNr].getSupported && _initData->parameters[parameterNr].setSupported)
+              _rdm.packet.Data[4] = E120_CC_GET_SET;
+            _rdm.packet.Data[5] = 0x00;
+            _rdm.packet.Data[6] = _initData->parameters[parameterNr].unit;
+            _rdm.packet.Data[7] = _initData->parameters[parameterNr].prefix;
+            WRITELONG(_rdm.packet.Data +  8, _initData->parameters[parameterNr].rangeMin);
+            WRITELONG(_rdm.packet.Data + 12, _initData->parameters[parameterNr].rangeMax);
+            WRITELONG(_rdm.packet.Data + 16, _initData->parameters[parameterNr].defaultValue);
+            memcpy(_rdm.packet.Data + 20, _initData->parameters[parameterNr].description, _rdm.packet.DataLength - 20);
+            handled = true;
+            ///////////////////////////////////////////
+          }
+        }
+      } else if (CmdClass == E120_SET_COMMAND) {
+        // Unexpected set
+        nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+      }
+
+    } else if (Parameter == SWAPINT(E120_SENSOR_VALUE) && _initData->sensorsLength > 0) { // 0x0201
+      if (CmdClass == E120_GET_COMMAND) {
+        if (_rdm.packet.DataLength != 1) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          uint8_t sensorNr = _rdm.packet.Data[0];
+          if (sensorNr >= _initData->sensorsLength) {
+            // Out of range sensor
+            nackReason = E120_NR_DATA_OUT_OF_RANGE;
+          } else {
+            int16_t sensorValue = 0;
+            int16_t lowestValue = 0;
+            int16_t highestValue = 0;
+            int16_t recordedValue = 0;
+            bool8 res = false;
+            if (_sensorFunc) {
+              res = _sensorFunc(sensorNr, &sensorValue, &lowestValue, &highestValue, &recordedValue);
+            }
+            if (res) {
+              _rdm.packet.DataLength = 9;
+              _rdm.packet.Data[0] = sensorNr;
+              WRITEINT(_rdm.packet.Data +  1, sensorValue);
+              WRITEINT(_rdm.packet.Data +  3, lowestValue);
+              WRITEINT(_rdm.packet.Data +  5, highestValue);
+              WRITEINT(_rdm.packet.Data +  7, recordedValue);
+              handled = true;
+            } else {
+              nackReason = E120_NR_HARDWARE_FAULT;
+            }
+          }
+        }
+      } else if (CmdClass == E120_SET_COMMAND) {
+        // Unhandled set. Set on a sensor is used to reset stats.
+        // User should process it in own handler when sensor supports high/low or recorded value.
+        nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+      }
 
     } else if (Parameter == SWAPINT(E120_SENSOR_DEFINITION) && _initData->sensorsLength > 0) { // 0x0200
       if (CmdClass == E120_GET_COMMAND) {
@@ -863,6 +973,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
         // Unexpected set
         nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
       }
+
     } else if (Parameter == SWAPINT(E120_SENSOR_VALUE) && _initData->sensorsLength > 0) { // 0x0201
       if (CmdClass == E120_GET_COMMAND) {
         if (_rdm.packet.DataLength != 1) {
@@ -907,6 +1018,61 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
     } else {
       handled = false;
 
+      for (uint16_t n = 0; n < _initData->parametersLength; n++) {
+        if (Parameter == SWAPINT(_initData->parameters[n].pid)) {
+          if (CmdClass == E120_GET_COMMAND) {
+            if (!_initData->parameters[n].getSupported) {
+              // get not supported
+              nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+            } else if (_rdm.packet.DataLength > 0) {
+              // Unexpected data
+              nackReason = E120_NR_FORMAT_ERROR;
+            } else if (_rdm.packet.SubDev != 0) {
+              // No sub-devices supported
+              nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+            } else {
+              uint8_t value[_initData->parameters[n].length];
+              bool8 res = false;
+              if (_getParamFunc) {
+                res = _getParamFunc(n, value);
+              }
+              if (res) {
+                _rdm.packet.DataLength = _initData->parameters[n].length;
+                memcpy(_rdm.packet.Data,value,_initData->parameters[n].length);
+                handled = true;
+              } else {
+                nackReason = E120_NR_HARDWARE_FAULT;
+              }
+            }
+
+          } else if (CmdClass == E120_SET_COMMAND) {
+            if (!_initData->parameters[n].setSupported) {
+              // set not supported
+              nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+            } else if (_rdm.packet.DataLength != _initData->parameters[n].length) {
+              // Unexpected data
+              nackReason = E120_NR_FORMAT_ERROR;
+            } else if (_rdm.packet.SubDev != 0) {
+              // No sub-devices supported
+              nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+            } else {
+              uint8_t value[_initData->parameters[n].length];
+              memcpy(value,_rdm.packet.Data,_initData->parameters[n].length);
+              bool8 res = false;
+              if (_setParamFunc) {
+                res = _setParamFunc(n, value);
+              }
+              if (res) {
+                _rdm.packet.DataLength = 0;
+                handled = true;
+              } else {
+                nackReason = E120_NR_HARDWARE_FAULT;
+              }
+            }
+          } // if
+          break;
+        }
+      } // for
     }  // if
   }  // if
 
