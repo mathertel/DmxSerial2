@@ -871,7 +871,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             }
           }
           if (!validPid) {
-            // Out of range sensor
+            // Out of range manufacturer specific PID
             nackReason = E120_NR_UNKNOWN_PID;
           } else {
             _rdm.packet.DataLength = 20 + strnlen(_initData->parameters[parameterNr].description, DMXSERIAL_MAX_RDM_STRING_LENGTH);
