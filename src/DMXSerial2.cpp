@@ -887,9 +887,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             _rdm.packet.Data[5] = 0x00;
             _rdm.packet.Data[6] = _initData->parameters[parameterNr].unit;
             _rdm.packet.Data[7] = _initData->parameters[parameterNr].prefix;
-            WRITELONG(_rdm.packet.Data +  8, _initData->parameters[parameterNr].rangeMin);
-            WRITELONG(_rdm.packet.Data + 12, _initData->parameters[parameterNr].rangeMax);
-            WRITELONG(_rdm.packet.Data + 16, _initData->parameters[parameterNr].defaultValue);
+            WRITEINT32(_rdm.packet.Data +  8, _initData->parameters[parameterNr].rangeMin);
+            WRITEINT32(_rdm.packet.Data + 12, _initData->parameters[parameterNr].rangeMax);
+            WRITEINT32(_rdm.packet.Data + 16, _initData->parameters[parameterNr].defaultValue);
             memcpy(_rdm.packet.Data + 20, _initData->parameters[parameterNr].description, _rdm.packet.DataLength - 20);
             handled = true;
             ///////////////////////////////////////////
