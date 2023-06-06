@@ -84,7 +84,7 @@ void setup () {
 #endif
 
   // initialize the Serial interface to be used as an RDM Device Node.
-  // There are several constants that have to be passed to the library so it can reposonse to the
+  // There are several constants that have to be passed to the library so it can respond to the
   // corresponding commands for itself.
   DMXSerial2.init(&rdmInit, processCommand);
 
