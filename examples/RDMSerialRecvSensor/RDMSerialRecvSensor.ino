@@ -93,7 +93,7 @@ void setup () {
 #endif
 
   // initialize the Serial interface to be used as an RDM Device Node.
-  // There are several constants that have to be passed to the library so it can reposonse to the
+  // There are several constants that have to be passed to the library so it can respond to the
   // corresponding commands for itself.
   DMXSerial2.init(&rdmInit, processCommand, getSensorValue);
 
@@ -138,7 +138,7 @@ void loop() {
   unsigned long lastPacket = DMXSerial2.noDataSince();
 
   if (DMXSerial2.isIdentifyMode()) {
-    // RDM command for indentification was sent.
+    // RDM command for identification was sent.
     // Blink the device.
     unsigned long now = millis();
     if (now % 1000 < 500) {
@@ -280,7 +280,7 @@ double getTemp(void)
   // The offset of 324.31 could be wrong. It is just an indication.
   t = (wADC - 324.31 ) / 1.22;
 
-  // The returned temperature is in degrees Celcius.
+  // The returned temperature is in degrees Celsius.
   return (t);
 } // getTemp
 
