@@ -878,12 +878,13 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             WRITEINT(_rdm.packet.Data, _initData->parameters[parameterNr].pid);
             _rdm.packet.Data[2] = _initData->parameters[parameterNr].length;
             _rdm.packet.Data[3] = _initData->parameters[parameterNr].type;
-            if (_initData->parameters[parameterNr].getSupported && !_initData->parameters[parameterNr].setSupported)
+            if (_initData->parameters[parameterNr].getSupported && !_initData->parameters[parameterNr].setSupported) {
               _rdm.packet.Data[4] = E120_CC_GET;
-            else if (!_initData->parameters[parameterNr].getSupported && _initData->parameters[parameterNr].setSupported)
+            } else if (!_initData->parameters[parameterNr].getSupported && _initData->parameters[parameterNr].setSupported) {
               _rdm.packet.Data[4] = E120_CC_SET;
-            else if (_initData->parameters[parameterNr].getSupported && _initData->parameters[parameterNr].setSupported)
+            } else if (_initData->parameters[parameterNr].getSupported && _initData->parameters[parameterNr].setSupported) {
               _rdm.packet.Data[4] = E120_CC_GET_SET;
+            }
             _rdm.packet.Data[5] = 0x00;
             _rdm.packet.Data[6] = _initData->parameters[parameterNr].unit;
             _rdm.packet.Data[7] = _initData->parameters[parameterNr].prefix;
