@@ -927,9 +927,9 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
               _rdm.packet.DataLength = 9;
               _rdm.packet.Data[0] = sensorNr;
               WRITEINT(_rdm.packet.Data +  1, sensorValue);
-              WRITEINT(_rdm.packet.Data +  3, lowestValue);
-              WRITEINT(_rdm.packet.Data +  5, highestValue);
-              WRITEINT(_rdm.packet.Data +  7, recordedValue);
+              WRITEINT(_rdm.packet.Data +  3, (_initData->sensors[sensorNr].lowHighSupported ? lowestValue : 0));
+              WRITEINT(_rdm.packet.Data +  5, (_initData->sensors[sensorNr].lowHighSupported ? highestValue : 0));
+              WRITEINT(_rdm.packet.Data +  7, (_initData->sensors[sensorNr].recordedSupported ? recordedValue : 0));
               handled = true;
             } else {
               nackReason = E120_NR_HARDWARE_FAULT;
@@ -937,9 +937,40 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           }
         }
       } else if (CmdClass == E120_SET_COMMAND) {
-        // Unhandled set. Set on a sensor is used to reset stats.
-        // User should process it in own handler when sensor supports high/low or recorded value.
-        nackReason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+        // Set on a sensor is used to reset stats.
+        if (_rdm.packet.DataLength != 1) {
+          // Unexpected data
+          nackReason = E120_NR_FORMAT_ERROR;
+        } else if (_rdm.packet.SubDev != 0) {
+          // No sub-devices supported
+          nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
+        } else {
+          uint8_t sensorNr = _rdm.packet.Data[0];
+          if (sensorNr >= _initData->sensorsLength) {
+            // Out of range sensor
+            nackReason = E120_NR_DATA_OUT_OF_RANGE;
+          } else {
+            int16_t sensorValue = 0;
+            int16_t lowestValue = 0;
+            int16_t highestValue = 0;
+            int16_t recordedValue = 0;
+            bool8 res = false;
+            if (_sensorFunc) {
+              res = _sensorFunc(sensorNr, &sensorValue, &lowestValue, &highestValue, &recordedValue);
+            }
+            if (res) {
+              _rdm.packet.DataLength = 9;
+              _rdm.packet.Data[0] = sensorNr;
+              WRITEINT(_rdm.packet.Data +  1, sensorValue);
+              WRITEINT(_rdm.packet.Data +  3, (_initData->sensors[sensorNr].lowHighSupported ? sensorValue : 0));
+              WRITEINT(_rdm.packet.Data +  5, (_initData->sensors[sensorNr].lowHighSupported ? sensorValue : 0));
+              WRITEINT(_rdm.packet.Data +  7, (_initData->sensors[sensorNr].recordedSupported ? sensorValue : 0));
+              handled = true;
+            } else {
+              nackReason = E120_NR_HARDWARE_FAULT;
+            }
+          }
+        }
       }
 
     } else if (Parameter == SWAPINT(E120_SENSOR_DEFINITION) && _initData->sensorsLength > 0) { // 0x0200
