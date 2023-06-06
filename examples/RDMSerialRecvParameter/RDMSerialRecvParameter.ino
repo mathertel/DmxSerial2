@@ -36,10 +36,7 @@
 // 05.06.2023 Tim Nijssen: Add example for device-specific parameters
 // - - - - -
 
-//#include <DMXSerial2.h>
-#include "E:\Dropbox\Flierefluiters\DMX\DmxSerial2\src\DMXSerial2.h"
-#include "E:\Dropbox\Flierefluiters\DMX\DmxSerial2\src\DMXSerial2.cpp"
-#include "E:\Dropbox\Flierefluiters\DMX\DmxSerial2\src\rdm.h"
+#include <DMXSerial2.h>
 
 // uncomment this line for enabling information on a LEONARD board. 
 // #define SERIAL_DEBUG
@@ -92,7 +89,7 @@ void setup () {
 #endif
 
   // initialize the Serial interface to be used as an RDM Device Node.
-  // There are several constants that have to be passed to the library so it can reposonse to the
+  // There are several constants that have to be passed to the library so it can respond to the
   // corresponding commands for itself.
   DMXSerial2.init(&rdmInit, processCommand, getParameters, setParameters);
 
