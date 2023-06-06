@@ -628,7 +628,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
     handled = _rdmFunc(&_rdm.packet, &nackReason);
   } // if
 
-  // if not already handled the command: handle it using this implementation
+  // if this command has not already been handled, handle it using this implementation
   if (! handled) {
 
     if (Parameter == SWAPINT(E120_IDENTIFY_DEVICE)) { // 0x1000
