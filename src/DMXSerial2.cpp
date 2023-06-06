@@ -861,11 +861,11 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           nackReason = E120_NR_SUB_DEVICE_OUT_OF_RANGE;
         } else {
           uint16_t requestedPid = READINT(_rdm.packet.Data);
-          uint16_t parameterNr;
+          uint16_t parameterIndex;
           bool8 validPid = false;
           for (uint16_t n = 0; n < _initData->parametersLength; n++) {
             if (requestedPid == _initData->parameters[n].pid) {
-              parameterNr = n;
+              parameterIndex = n;
               validPid = true;
               break;
             }
@@ -874,24 +874,24 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             // Out of range manufacturer specific PID
             nackReason = E120_NR_DATA_OUT_OF_RANGE;
           } else {
-            _rdm.packet.DataLength = 20 + strnlen(_initData->parameters[parameterNr].description, DMXSERIAL_MAX_RDM_STRING_LENGTH);
-            WRITEINT(_rdm.packet.Data, _initData->parameters[parameterNr].pid);
-            _rdm.packet.Data[2] = _initData->parameters[parameterNr].length;
-            _rdm.packet.Data[3] = _initData->parameters[parameterNr].type;
-            if (_initData->parameters[parameterNr].getSupported && !_initData->parameters[parameterNr].setSupported) {
+            _rdm.packet.DataLength = 20 + strnlen(_initData->parameters[parameterIndex].description, DMXSERIAL_MAX_RDM_STRING_LENGTH);
+            WRITEINT(_rdm.packet.Data, _initData->parameters[parameterIndex].pid);
+            _rdm.packet.Data[2] = _initData->parameters[parameterIndex].length;
+            _rdm.packet.Data[3] = _initData->parameters[parameterIndex].type;
+            if (_initData->parameters[parameterIndex].getSupported && !_initData->parameters[parameterIndex].setSupported) {
               _rdm.packet.Data[4] = E120_CC_GET;
-            } else if (!_initData->parameters[parameterNr].getSupported && _initData->parameters[parameterNr].setSupported) {
+            } else if (!_initData->parameters[parameterIndex].getSupported && _initData->parameters[parameterIndex].setSupported) {
               _rdm.packet.Data[4] = E120_CC_SET;
-            } else if (_initData->parameters[parameterNr].getSupported && _initData->parameters[parameterNr].setSupported) {
+            } else if (_initData->parameters[parameterIndex].getSupported && _initData->parameters[parameterIndex].setSupported) {
               _rdm.packet.Data[4] = E120_CC_GET_SET;
             }
             _rdm.packet.Data[5] = 0x00;
-            _rdm.packet.Data[6] = _initData->parameters[parameterNr].unit;
-            _rdm.packet.Data[7] = _initData->parameters[parameterNr].prefix;
-            WRITEINT32(_rdm.packet.Data +  8, _initData->parameters[parameterNr].rangeMin);
-            WRITEINT32(_rdm.packet.Data + 12, _initData->parameters[parameterNr].rangeMax);
-            WRITEINT32(_rdm.packet.Data + 16, _initData->parameters[parameterNr].defaultValue);
-            memcpy(_rdm.packet.Data + 20, _initData->parameters[parameterNr].description, _rdm.packet.DataLength - 20);
+            _rdm.packet.Data[6] = _initData->parameters[parameterIndex].unit;
+            _rdm.packet.Data[7] = _initData->parameters[parameterIndex].prefix;
+            WRITEINT32(_rdm.packet.Data +  8, _initData->parameters[parameterIndex].rangeMin);
+            WRITEINT32(_rdm.packet.Data + 12, _initData->parameters[parameterIndex].rangeMax);
+            WRITEINT32(_rdm.packet.Data + 16, _initData->parameters[parameterIndex].defaultValue);
+            memcpy(_rdm.packet.Data + 20, _initData->parameters[parameterIndex].description, _rdm.packet.DataLength - 20);
             handled = true;
             ///////////////////////////////////////////
           }
@@ -1035,7 +1035,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
               uint8_t value[_initData->parameters[n].length];
               bool8 res = false;
               if (_getParamFunc) {
-                res = _getParamFunc(n, value);
+                res = _getParamFunc(_initData->parameters[n].pid, n, value);
               }
               if (res) {
                 _rdm.packet.DataLength = _initData->parameters[n].length;
@@ -1061,7 +1061,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
               memcpy(value,_rdm.packet.Data,_initData->parameters[n].length);
               bool8 res = false;
               if (_setParamFunc) {
-                res = _setParamFunc(n, value);
+                res = _setParamFunc(_initData->parameters[n].pid, n, value);
               }
               if (res) {
                 _rdm.packet.DataLength = 0;

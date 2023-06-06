@@ -140,12 +140,12 @@ extern "C" {
   /**
    * @brief Callback function for getting RDM parameters.
    */
-  typedef bool8 (*RDMGetParameterValue)(uint16_t parameterNr, int8_t *value);
+  typedef bool8 (*RDMGetParameterValue)(uint16_t pid, uint16_t parameterIndex, int8_t *value);
 
   /**
    * @brief Callback function for setting RDM parameters.
    */
-  typedef bool8 (*RDMSetParameterValue)(uint16_t parameterNr, int8_t *value);
+  typedef bool8 (*RDMSetParameterValue)(uint16_t pid, uint16_t parameterIndex, int8_t *value);
 }
 
 // ----- Library Class -----
