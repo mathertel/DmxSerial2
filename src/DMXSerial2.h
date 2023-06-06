@@ -151,7 +151,7 @@ extern "C" {
 // ----- Library Class -----
 
 // These types are used to pass all the data into the initRDM function.
-// The library needs this data to reposonse at the corresponding commands for itself.
+// The library needs this data to respond at the corresponding commands for itself.
 
 struct RDMPERSONALITY {
   uint16_t footprint;
