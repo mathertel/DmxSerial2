@@ -118,7 +118,7 @@ struct RDMDATA {
 #define WRITEINT(p, d) (p)[0] = (d&0xFF00)>>8; (p)[1] = (d&0x00FF);
 
 /// write a 32 bit number to a data buffer location
-#define WRITELONG(p, d) (p)[0] = (d&0xFF000000)>>24; (p)[1] = (d&0x00FF0000)>>16; (p)[2] = (d&0x0000FF00)>>8; (p)[3] = (d&0x000000FF);
+#define WRITEINT32(p, d) (p)[0] = (d&0xFF000000)>>24; (p)[1] = (d&0x00FF0000)>>16; (p)[2] = (d&0x0000FF00)>>8; (p)[3] = (d&0x000000FF);
 
 
 // ----- Callback function types -----
