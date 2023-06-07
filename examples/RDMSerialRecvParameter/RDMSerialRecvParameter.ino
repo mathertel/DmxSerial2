@@ -62,7 +62,8 @@ void rgb(byte r, byte g, byte b) {
 // see DMXSerial2.h for the definition of the fields of this structure
 const uint16_t my_pids[] = { E120_DEVICE_HOURS, E120_LAMP_HOURS };
 const RDMPARAMETER my_parameters[] = {
-  { 0x8000, 1, E120_DS_UNSIGNED_BYTE, E120_UNITS_NONE, E120_PREFIX_NONE, 0, 255, 128, true, true, "TestParamA" } { 0x8001, 2, E120_DS_UNSIGNED_BYTE, E120_UNITS_NONE, E120_PREFIX_NONE, 0, 255, 128, true, true, "TestParamB" }
+  { 0x8000, 1, E120_DS_UNSIGNED_BYTE, E120_UNITS_NONE, E120_PREFIX_NONE, 0, 255, 128, true, true, "paramA" },
+  { 0x8001, 2, E120_DS_UNSIGNED_BYTE, E120_UNITS_NONE, E120_PREFIX_NONE, 0, 255, 128, true, true, "paramB" }
 };
 struct RDMINIT rdmInit = {
   "mathertel.de",        // Manufacturer Label
@@ -235,7 +236,7 @@ bool8 getParameters(uint16_t pid, uint16_t parameterIndex, int8_t *value) {
   if (parameterIndex == 0) {
     value[0] = parameterA;
     return true;
-  } else if (parameterIndex == 0) {
+  } else if (parameterIndex == 1) {
     value[0] = parameterB[0];
     value[1] = parameterB[1];
     return true;
@@ -251,7 +252,7 @@ bool8 setParameters(uint16_t pid, uint16_t parameterIndex, int8_t *value) {
   if (parameterIndex == 0) {
     parameterA = value[0];
     return true;
-  } else if (parameterIndex == 0) {
+  } else if (parameterIndex == 1) {
     parameterB[0] = value[0];
     parameterB[1] = value[1];
     return true;
