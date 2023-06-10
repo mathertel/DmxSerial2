@@ -622,6 +622,7 @@ void DMXSerialClass2::term(void)
 void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool8 handled, bool8 doRespond)
 {
   uint16_t nackReason = E120_NR_UNKNOWN_PID;
+  bool8 updateEEPRom = false;
 
   // call the device specific method
   if ((! handled) && (_rdmFunc)) {
@@ -746,7 +747,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             deviceLabel[min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH)] = '\0';
             _rdm.packet.DataLength = 0;
             // persist in EEPROM
-            _saveEEPRom();
+            updateEEPRom = true;
             handled = true;
           }
         }
@@ -798,7 +799,7 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
             _startAddress = newStartAddress;
             _rdm.packet.DataLength = 0;
             // persist in EEPROM
-            _saveEEPRom();
+            updateEEPRom = true;
             handled = true;
           }
         }
@@ -1119,6 +1120,8 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
 
   if (doRespond)
     respondMessage(handled, nackReason);
+  if (updateEEPRom)
+    _saveEEPRom();
 } // _processRDMMessage
 
 
