@@ -734,12 +734,21 @@ void DMXSerialClass2::_processRDMMessage(byte CmdClass, uint16_t Parameter, bool
           // Oversized data
           nackReason = E120_NR_FORMAT_ERROR;
         } else {
-          memcpy(deviceLabel, _rdm.packet.Data, _rdm.packet.DataLength);
-          deviceLabel[min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH)] = '\0';
-          _rdm.packet.DataLength = 0;
-          // persist in EEPROM
-          _saveEEPRom();
-          handled = true;
+          bool8 validAsciiStr = true;
+          for (int i = 0; i<_rdm.packet.DataLength; i++) {
+            validAsciiStr = validAsciiStr && isAscii(_rdm.packet.Data[i]);
+          }
+          if (!validAsciiStr) {
+            // Not a valid ASCII string
+            nackReason = E120_NR_FORMAT_ERROR;
+          } else {
+            memcpy(deviceLabel, _rdm.packet.Data, _rdm.packet.DataLength);
+            deviceLabel[min(_rdm.packet.DataLength, DMXSERIAL_MAX_RDM_STRING_LENGTH)] = '\0';
+            _rdm.packet.DataLength = 0;
+            // persist in EEPROM
+            _saveEEPRom();
+            handled = true;
+          }
         }
       } else if (CmdClass == E120_GET_COMMAND) {
         if (_rdm.packet.DataLength > 0) {
