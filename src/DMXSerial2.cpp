@@ -1310,7 +1310,7 @@ void respondMessage(bool8 isHandled, uint16_t nackReason)
   if (isHandled) {
     _rdm.packet.ResponseType = E120_RESPONSE_TYPE_ACK; // 0x00
   } else {
-    _rdm.packet.ResponseType = E120_RESPONSE_TYPE_NACK_REASON; // 0x00
+    _rdm.packet.ResponseType = E120_RESPONSE_TYPE_NACK_REASON; // 0x02
     _rdm.packet.DataLength = 2;
     _rdm.packet.Data[0] = (nackReason >> 8) & 0xFF;
     _rdm.packet.Data[1] = nackReason & 0xFF;
