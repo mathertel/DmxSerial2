@@ -47,6 +47,10 @@ const int RedPin = 9;    // PWM output pin for Red Light.
 const int GreenPin = 6;  // PWM output pin for Green Light.
 const int BluePin = 5;   // PWM output pin for Blue Light.
 
+// device-specific PIDs should be in the range 0x8000-0xFFDF
+#define PARAM_A_PID 0x8000
+#define PARAM_B_PID 0x8001
+
 // color: #203050 * 2
 #define RedDefaultLevel 0x20 * 2
 #define GreenDefaultLevel 0x30 * 2
@@ -62,8 +66,8 @@ void rgb(byte r, byte g, byte b) {
 // see DMXSerial2.h for the definition of the fields of this structure
 const uint16_t my_pids[] = { E120_DEVICE_HOURS, E120_LAMP_HOURS };
 const RDMPARAMETER my_parameters[] = {
-  { 0x8000, 1, E120_DS_UNSIGNED_BYTE, E120_UNITS_NONE, E120_PREFIX_NONE, 0, 255, 128, true, true, "paramA" },
-  { 0x8001, 2, E120_DS_UNSIGNED_BYTE, E120_UNITS_NONE, E120_PREFIX_NONE, 0, 255, 128, true, true, "paramB" }
+  { PARAM_A_PID, 1, E120_DS_UNSIGNED_BYTE, E120_UNITS_NONE, E120_PREFIX_NONE, 0, 255, 128, true, true, "paramA" },
+  { PARAM_B_PID, 2, E120_DS_UNSIGNED_BYTE, E120_UNITS_NONE, E120_PREFIX_NONE, 0, 255, 128, true, true, "paramB" }
 };
 struct RDMINIT rdmInit = {
   "mathertel.de",        // Manufacturer Label
@@ -233,10 +237,10 @@ bool8 processCommand(struct RDMDATA *rdm, uint16_t *nackReason) {
 // This function was registered to the DMXSerial2 library in the initRDM call.
 // Here retrieval of manufacturer-specific parameter values is implemented.
 bool8 getParameters(uint16_t pid, uint16_t parameterIndex, int8_t *value) {
-  if (parameterIndex == 0) {
+  if (pid == PARAM_A_PID) {
     value[0] = parameterA;
     return true;
-  } else if (parameterIndex == 1) {
+  } else if (pid == PARAM_B_PID) {
     value[0] = parameterB[0];
     value[1] = parameterB[1];
     return true;
@@ -249,10 +253,10 @@ bool8 getParameters(uint16_t pid, uint16_t parameterIndex, int8_t *value) {
 // Here setting of manufacturer-specific parameter values is implemented.
 bool8 setParameters(uint16_t pid, uint16_t parameterIndex, int8_t *value) {
   // do something with the value here, eg store it in eeprom
-  if (parameterIndex == 0) {
+  if (pid == PARAM_A_PID) {
     parameterA = value[0];
     return true;
-  } else if (parameterIndex == 1) {
+  } else if (pid == PARAM_B_PID) {
     parameterB[0] = value[0];
     parameterB[1] = value[1];
     return true;
