@@ -298,13 +298,13 @@ class DMXSerialClass2
     /// Return the current DMX footprint, that is the number of DMX addresses used by the device.
     uint16_t getFootprint();
 
-    /// Register a device-specific implemented function for RDM callbacks
+    /// Register a manufacturer-specific implemented function for RDM callbacks
     void    attachRDMCallback (RDMCallbackFunction newFunction);
 
-    /// Register a device-specific implemented function for getting sensor values
+    /// Register a manufacturer-specific implemented function for getting sensor values
     void    attachSensorCallback (RDMGetSensorValue newFunction);
 
-    /// Register a device-specific implemented function for getting/setting parameter values
+    /// Register a manufacturer-specific implemented function for getting/setting parameter values
     void    attachParameterCallback(RDMGetParameterValue newGetFunction, RDMSetParameterValue newSetFunction);
 
     /// check for unprocessed RDM Command.

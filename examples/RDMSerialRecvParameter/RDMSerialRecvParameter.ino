@@ -31,9 +31,9 @@
 // 25.05.2017 Stefan Krupop: Add support for sensors
 // 21.08.2018 improvements and typo by Peter Newman
 // 31.10.2018 Remove unnecessary #include <EEPROM.h> by Graham Hanson
-// 04.06.2023 Tim Nijssen: Add support for device-specific parameters
+// 04.06.2023 Tim Nijssen: Add support for manufacturer-specific parameters
 // 05.06.2023 Tim Nijssen: integrate sensors example
-// 05.06.2023 Tim Nijssen: Add example for device-specific parameters
+// 05.06.2023 Tim Nijssen: Add example for manufacturer-specific parameters
 // - - - - -
 
 #include <DMXSerial2.h>
@@ -47,7 +47,7 @@ const int RedPin = 9;    // PWM output pin for Red Light.
 const int GreenPin = 6;  // PWM output pin for Green Light.
 const int BluePin = 5;   // PWM output pin for Blue Light.
 
-// device-specific PIDs should be in the range 0x8000-0xFFDF
+// manufacturer-specific PIDs should be in the range 0x8000-0xFFDF
 #define PARAM_A_PID 0x8000
 #define PARAM_B_PID 0x8001
 
