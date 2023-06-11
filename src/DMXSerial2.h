@@ -209,8 +209,8 @@ class DMXSerialClass2
      * @brief Initialize for RDM mode.
      * @param [in] initData Startup parameters.
      * @param [in] func Callback function for answering on device specific features.
-     * @param [in] modePin The pin used to switch the communication direction. This parameter is optiona and defaults to 2.
-     * @param [in] modeIn  The level for inbound communication. This parameter is optiona and defaults to 0 = LOW.
+     * @param [in] modePin The pin used to switch the communication direction. This parameter is optional and defaults to 2.
+     * @param [in] modeIn  The level for inbound communication. This parameter is optional and defaults to 0 = LOW.
      * @param [in] modeOut The level for outbound communication. This parameter is optional and defaults to 1 = HIGH.
      */
     void    init (struct RDMINIT *initData, RDMCallbackFunction func, uint8_t modePin = 2, uint8_t modeIn = 0, uint8_t modeOut = 1) {
@@ -222,7 +222,7 @@ class DMXSerialClass2
      * @param [in] initData Startup parameters.
      * @param [in] func Callback function for answering on device specific features.
      * @param [in] sensorFunc Callback function for retrieving a sensor value.
-     * @param [in] modePin The pin used to switch the communication direction. This parameter is optiona and defaults to 2.
+     * @param [in] modePin The pin used to switch the communication direction. This parameter is optional and defaults to 2.
      * @param [in] modeIn  The level for inbound communication. This parameter is optional and defaults to 0 = LOW.
      * @param [in] modeOut The level for outbound communication. This parameter is optional and defaults to 1 = HIGH.
      */
