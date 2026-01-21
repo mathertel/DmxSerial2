@@ -31,6 +31,9 @@
 // 25.05.2017 Stefan Krupop: Add support for sensors
 // 21.08.2018 improvements and typo by Peter Newman
 // 31.10.2018 Remove unnecessary #include <EEPROM.h> by Graham Hanson
+// 04.06.2023 Tim Nijssen: Add support for manufacturer-specific parameters
+// 05.06.2023 Tim Nijssen: integrate sensors example
+// 05.06.2023 Tim Nijssen: Add example for manufacturer-specific parameters
 // - - - - -
 
 #include <DMXSerial2.h>
@@ -81,7 +84,7 @@ void setup () {
 #endif
 
   // initialize the Serial interface to be used as an RDM Device Node.
-  // There are several constants that have to be passed to the library so it can reposonse to the
+  // There are several constants that have to be passed to the library so it can respond to the
   // corresponding commands for itself.
   DMXSerial2.init(&rdmInit, processCommand);
 
